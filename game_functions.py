@@ -116,7 +116,7 @@ def check_castling_rights(fen_string: str) -> str:
             raise ValueError("Invalid castling rights")
 
 
-def white_pawn_moves(board: list) -> int: #For white pawns only
+def white_pawn_moves(board: list) -> int:
     moves_frm_to = []
     for row in range(8):
         for col in range(8):
@@ -151,3 +151,14 @@ def black_pawn_moves(board: list) -> int:
                     if row < 7 and col > 7 and board[row+1][col+1].islower():
                         moves_frm_to.append([(row, col), (row+1, col+1)])
     return len(moves_frm_to)
+
+
+# New
+def board_to_fen(board: str) -> str: # convert board array to a fen string
+    pass
+
+def generate_moves(board: list) -> list: # Return list of all possible moves
+    raise NotImplementedError("This function is not implemented yet.")
+
+def apply_move(board, move):
+    raise NotImplementedError("This function is not implemented yet.")
