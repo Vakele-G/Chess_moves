@@ -2,11 +2,8 @@
 def main():
     board = parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     moves = generate_moves(board)
-    print(moves)
-    print(board)
     for row in board:                      # print board
         print(*row)
-
 
 
 def parse_fen(fen):
@@ -26,7 +23,7 @@ def parse_fen(fen):
 
 
 def generate_moves(board):
-    pawn_moves = pawn_start_moves(board) + pawn_other_moves(board) + 
+    pawn_moves = pawn_start_moves(board) + pawn_other_moves(board)
     return pawn_moves
     raise NotImplementedError("This function is not implemented yet.")
 
