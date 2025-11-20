@@ -1,5 +1,5 @@
 import sys
-from game_functions import generate_board, print_board, check_castling_rights, game_state, white_pawn_moves, black_pawn_moves
+from game_functions import generate_board, print_board, game_state, white_pawn_moves, black_pawn_moves
 
 
 fen_string =  sys.argv[1]

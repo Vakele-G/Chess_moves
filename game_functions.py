@@ -153,7 +153,7 @@ def black_pawn_moves(board: list) -> int:
     return len(moves_frm_to)
 
 
-# New
+# To-do
 def board_to_fen(board: str) -> str: # convert board array to a fen string
     pass
 
