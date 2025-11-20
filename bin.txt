@@ -1,6 +1,6 @@
-First version of generate board function
+First version of white_pawn_moves function
 
-def first_version(board: list):            
+def white_pawn_moves(board: list):            
     moves = 0
     for row_idx, row in enumerate(board):
         for col_idx, sq in enumerate(row):
@@ -56,17 +56,3 @@ def first_version(board: list):
                     if board[row_idx-1][col_idx-1] in ("r","n","b","q","k","p"):
                         moves += 1
     return moves
-
-def first_version(board):
-    board = [[]]
-    for char in fen_string:
-        if char.isdigit():
-            board[-1].extend(["_"] * int(char))
-        elif char == "/":
-            board.append([])
-        elif char == " ":
-            break
-        else:
-            board[-1].append(char)
-    #print(*pieces,sep = "\n")
-    return board
