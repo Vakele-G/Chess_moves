@@ -1,5 +1,5 @@
 import unittest
-from game_functions import generate_board, check_castling_rights
+from game_functions import generate_board
 
 class ViewFenTest(unittest.TestCase):
     def test_board(self):
