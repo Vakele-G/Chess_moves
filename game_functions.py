@@ -1,4 +1,3 @@
-import chess
 def generate_board(fen_string: str) -> list:
     board_string, to_move, castling_rights, en_passant, half_move, full_move = fen_string.split(" ")
 
@@ -153,19 +152,23 @@ def black_pawn_moves(board: list) -> int:
     return len(moves_frm_to)
 
 
-# To-do
 def board_to_fen(board: list) -> str: # convert board array to a fen string
-    chess_board = chess.Board.empty()
-    chess_board.clear_board()
-    for row_idx, row in enumerate(board):
-        rank = 7 - row_idx
-        for col_idx, symbol in enumerate(row):
-            if symbol == ".":
-                continue
-            piece = chess.Piece.from_symbol(symbol)
-            square = chess.square(col_idx, rank)
-            chess_board.set_piece_at(square, piece)
-    return chess_board.board_fen()
+    fen_rows = []
+    for row in board:
+        empty_run = 0
+        fen_row = ""
+        for square in row:
+            if square == ".":
+                empty_run += 1
+            else:
+                if empty_run:
+                    fen_row += str(empty_run)
+                    empty_run = 0
+                fen_row += square
+        if empty_run:
+            fen_row += str(empty_run)
+        fen_rows.append(fen_row)
+    return "/".join(fen_rows)
 
 def generate_moves(board: list) -> list: # Return list of all possible moves
     raise NotImplementedError("This function is not implemented yet.")
