@@ -317,8 +317,59 @@ def black_knight_moves(board: list) -> int:
 
 
 def white_bishop_moves(board: list) -> int:
-    ...
+    moves = []
+    directions = [
+        (1, 1),   # down-right
+        (1, -1),  # down-left
+        (-1, 1),  # up-right
+        (-1, -1)  # up-left
+    ]
 
+    for row in range(8):
+        for col in range(8):
+            if board[row][col] == "B":
+                for r, c in directions:
+                    nr, nc = row + r, col + c
+                    # keep sliding until off board
+                    while 0 <= nr < 8 and 0 <= nc < 8:
+                        if board[nr][nc] in "RNBKQP":
+                            break
+                        elif board[nr][nc] in "rnbkqp":
+                            moves.append([(row, col), (nr, nc)])
+                            break
+                        elif board[nr][nc] == ".":
+                            moves.append([(row, col), (nr, nc)])
+                            nr += r
+                            nc += c
+    return len(moves)
+
+
+def black_bishop_moves(board: list) -> int:
+    moves = []
+    directions = [
+        (1, 1),   # down-right
+        (1, -1),  # down-left
+        (-1, 1),  # up-right
+        (-1, -1)  # up-left
+    ]
+
+    for row in range(8):
+        for col in range(8):
+            if board[row][col] == "b":
+                for r, c in directions:
+                    nr, nc = row + r, col + c
+                    # keep sliding until off board
+                    while 0 <= nr < 8 and 0 <= nc < 8:
+                        if board[nr][nc] in "rnbkqp":
+                            break
+                        elif board[nr][nc] in "RNBKQP":
+                            moves.append([(row, col), (nr, nc)])
+                            break
+                        elif board[nr][nc] == ".":
+                            moves.append([(row, col), (nr, nc)])
+                            nr += r
+                            nc += c
+    return len(moves)
 
 def generate_moves(board: list) -> list: # Return list of all possible moves
     raise NotImplementedError("This function is not implemented yet.")
