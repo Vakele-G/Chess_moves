@@ -315,6 +315,11 @@ def black_knight_moves(board: list) -> int:
                             moves_frm_to.append([(row, col), (nr, nc)])
     return len(moves_frm_to)
 
+
+def white_bishop_moves(board: list) -> int:
+    ...
+
+
 def generate_moves(board: list) -> list: # Return list of all possible moves
     raise NotImplementedError("This function is not implemented yet.")
 
