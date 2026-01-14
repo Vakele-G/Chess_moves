@@ -32,12 +32,15 @@ print()
 print_board(new_game.board)
 
 while True:
-    move = input("\nEnter a move (eg. e2 e4): ")
-    move = move.strip().split()
-    new_game.play(move[0], move[1])
+    move = input("\nEnter a move (eg. e2 e4): ").strip().split()
 
+    while not new_game.validate_move(move[0], move[1]):
+        move = input("Invalid move. Try again: ").strip().split()
+
+    new_game.play(move[0], move[1])
     print_board(new_game.board)
     print()
+
 
 
 """Right now, illegal moves are able to be played. Checks, checkmate, enpassant and promotion are not implemented"""

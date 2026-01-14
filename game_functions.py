@@ -68,14 +68,43 @@ class Game:
                         "h7":(1,7),
                         "h8":(0,7)}
 
-    def play(self, sq1, sq2):
+    def play(self, sq1, sq2) -> None:
         pos1 = self.squares[sq1]
         pos2 = self.squares[sq2]
         piece = self.board[pos1[0]][pos1[1]]
-        piece2 = self.board[pos2[0]][pos2[1]]
 
         self.board[pos1[0]][pos1[1]] = "."
         self.board[pos2[0]][pos2[1]] = piece
+    
+    def validate_move(self, sq1, sq2) -> bool:
+        pos1 = self.squares[sq1]
+        pos2 = self.squares[sq2]
+
+        match self.board[pos1[0]][pos2[1]]:
+            case "P":
+                return True if [pos1, pos2] in white_pawn_moves(self.board) else False
+            case "p":
+                return True if [pos1, pos2] in black_pawn_moves(self.board) else False
+            case "R":
+                return True if [pos1, pos2] in white_rook_moves(self.board) else False
+            case "r":
+                return True if [pos1, pos2] in black_rook_moves(self.board) else False
+            case "N":
+                return True if [pos1, pos2] in white_knight_moves(self.board) else False
+            case "n":
+                return True if [pos1, pos2] in black_knight_moves(self.board) else False
+            case "B":
+                return True if [pos1, pos2] in white_bishop_moves(self.board) else False
+            case "b":
+                return True if [pos1, pos2] in black_bishop_moves(self.board) else False
+            case "Q":
+                return True if [pos1, pos2] in white_queen_moves(self.board) else False
+            case "q":
+                return True if [pos1, pos2] in black_queen_moves(self.board) else False
+            case "K":
+                return True if [pos1, pos2] in white_king_moves(self.board) else False
+            case "k":
+                return True if [pos1, pos2] in black_king_moves(self.board) else False
 
 def generate_board(fen_string: str) -> list:
     board_string, to_move, castling_rights, en_passant, half_move, full_move = fen_string.split(" ")
@@ -213,7 +242,7 @@ def check_castling_rights(fen_string: str) -> str:
             raise ValueError("Invalid castling rights")
 
 
-def white_pawn_moves(board: list) -> int:
+def white_pawn_moves(board: list) -> list:
     moves_frm_to = []
     for row in range(8):
         for col in range(8):
@@ -228,7 +257,7 @@ def white_pawn_moves(board: list) -> int:
                         moves_frm_to.append([(row, col), (row-1, col-1)])
                     if row > 0 and col > 7 and board[row-1][col+1].islower():
                         moves_frm_to.append([(row, col), (row-1, col+1)])
-    return len(moves_frm_to)            
+    return moves_frm_to
 
 
 def black_pawn_moves(board: list) -> int:
@@ -450,6 +479,177 @@ def black_bishop_moves(board: list) -> int:
                             nc += c
     return len(moves)
 
+
+def white_king_moves(board: list) -> list:
+    moves = []
+
+    # All 8 possible king directions
+    directions = [
+        (-1, -1), (-1, 0), (-1, 1),
+        (0, -1),          (0, 1),
+        (1, -1),  (1, 0), (1, 1)
+    ]
+
+    # Find the white king
+    king_pos = None
+    for r in range(8):
+        for c in range(8):
+            if board[r][c] == "K":
+                king_pos = (r, c)
+                break
+        if king_pos:
+            break
+
+    if king_pos is None:
+        return moves
+
+    kr, kc = king_pos
+
+    # Generate legal moves
+    for dr, dc in directions:
+        nr, nc = kr + dr, kc + dc
+
+        # Check board bounds
+        if 0 <= nr < 8 and 0 <= nc < 8:
+            target = board[nr][nc]
+
+            # Empty square or capture black piece
+            if target not in "RNBQKP":
+                moves.append([(kr, kc), (nr, nc)])
+
+    return moves
+
+
+def black_king_moves(board: list) -> list:
+    moves = []
+
+    # All 8 possible king directions
+    directions = [
+        (-1, -1), (-1, 0), (-1, 1),
+        (0, -1),          (0, 1),
+        (1, -1),  (1, 0), (1, 1)
+    ]
+
+    # Find the white king
+    king_pos = None
+    for r in range(8):
+        for c in range(8):
+            if board[r][c] == "k":
+                king_pos = (r, c)
+                break
+        if king_pos:
+            break
+
+    if king_pos is None:
+        return moves
+
+    kr, kc = king_pos
+
+    # Generate legal moves
+    for dr, dc in directions:
+        nr, nc = kr + dr, kc + dc
+
+        # Check board bounds
+        if 0 <= nr < 8 and 0 <= nc < 8:
+            target = board[nr][nc]
+
+            # Empty square or capture black piece
+            if target not in "rnbqkp":
+                moves.append([(kr, kc), (nr, nc)])
+
+    return moves
+                
+
+def white_queen_moves(board: list) -> list:
+    moves = []
+
+    # 8 directions: rook + bishop combined
+    directions = [
+        (-1, 0), (1, 0), (0, -1), (0, 1),     # Rook-like
+        (-1, -1), (-1, 1), (1, -1), (1, 1)    # Bishop-like
+    ]
+
+    # Find the white queen
+    queen_pos = None
+    for r in range(8):
+        for c in range(8):
+            if board[r][c] == "Q":
+                queen_pos = (r, c)
+                break
+        if queen_pos:
+            break
+
+    if queen_pos is None:
+        return moves
+
+    qr, qc = queen_pos
+
+    # Explore each direction
+    for dr, dc in directions:
+        nr, nc = qr + dr, qc + dc
+
+        while 0 <= nr < 8 and 0 <= nc < 8:
+            target = board[nr][nc]
+
+            if target == ".":
+                moves.append([(qr, qc), (nr, nc)])
+            elif target.islower():  # Capture black piece
+                moves.append([(qr, qc), (nr, nc)])
+                break
+            else:  # Blocked by white piece
+                break
+
+            nr += dr
+            nc += dc
+
+    return moves
+
+
+def black_queen_moves(board: list) -> list:
+    moves = []
+
+    # 8 directions: rook + bishop combined
+    directions = [
+        (-1, 0), (1, 0), (0, -1), (0, 1),     # Rook-like
+        (-1, -1), (-1, 1), (1, -1), (1, 1)    # Bishop-like
+    ]
+
+    # Find the white queen
+    queen_pos = None
+    for r in range(8):
+        for c in range(8):
+            if board[r][c] == "q":
+                queen_pos = (r, c)
+                break
+        if queen_pos:
+            break
+
+    if queen_pos is None:
+        return moves
+
+    qr, qc = queen_pos
+
+    # Explore each direction
+    for dr, dc in directions:
+        nr, nc = qr + dr, qc + dc
+
+        while 0 <= nr < 8 and 0 <= nc < 8:
+            target = board[nr][nc]
+
+            if target == ".":
+                moves.append([(qr, qc), (nr, nc)])
+            elif target.isupper():  # Capture white piece
+                moves.append([(qr, qc), (nr, nc)])
+                break
+            else:  # Blocked by black piece
+                break
+
+            nr += dr
+            nc += dc
+
+    return moves
+
+
 def generate_moves(board: list) -> list: # Return list of all possible moves
     raise NotImplementedError("This function is not implemented yet.")
 
@@ -457,3 +657,5 @@ def generate_moves(board: list) -> list: # Return list of all possible moves
 def apply_move(board, move):
     raise NotImplementedError("This function is not implemented yet.")
 
+# King queen moves function do not work properly
+# validate method might be broke as well
