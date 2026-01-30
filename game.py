@@ -1,5 +1,16 @@
 import sys
-from game_functions import generate_board, print_board, game_state, white_pawn_moves, black_pawn_moves, white_rook_moves, black_rook_moves, white_knight_moves, black_knight_moves, white_bishop_moves, black_bishop_moves
+from game_functions import (generate_board, 
+                            print_board, 
+                            game_state, 
+                            white_pawn_moves, 
+                            black_pawn_moves, 
+                            white_rook_moves, 
+                            black_rook_moves, 
+                            white_knight_moves, 
+                            black_knight_moves, 
+                            white_bishop_moves, 
+                            black_bishop_moves,
+                            white_queen_moves,)
 from game_functions import Game
 
 
@@ -33,7 +44,7 @@ print_board(new_game.board)
 
 while True:
     move = input("\nEnter a move (eg. e2 e4): ").strip().split()
-
+    
     while not new_game.validate_move(move[0], move[1]):
         move = input("Invalid move. Try again: ").strip().split()
 

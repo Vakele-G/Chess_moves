@@ -77,10 +77,10 @@ class Game:
         self.board[pos2[0]][pos2[1]] = piece
     
     def validate_move(self, sq1, sq2) -> bool:
-        pos1 = self.squares[sq1]
-        pos2 = self.squares[sq2]
+        pos1 = self.squares[sq1] # (7,3)
+        pos2 = self.squares[sq2] # (6,4)
 
-        match self.board[pos1[0]][pos2[1]]:
+        match self.board[pos1[0]][pos1[1]]: #board[7][4]
             case "P":
                 return True if [pos1, pos2] in white_pawn_moves(self.board) else False
             case "p":
@@ -275,7 +275,7 @@ def black_pawn_moves(board: list) -> int:
                         moves_frm_to.append([(row, col), (row+1, col-1)])
                     if row < 7 and col > 7 and board[row+1][col+1].islower():
                         moves_frm_to.append([(row, col), (row+1, col+1)])
-    return len(moves_frm_to)
+    return moves_frm_to
 
 
 def white_rook_moves(board: list) -> int:
@@ -328,7 +328,7 @@ def white_rook_moves(board: list) -> int:
                         moves_frm_to.append([(c_row, c_col), (c_row, c_col+1)])
                         break
                 c_col = col
-    return len(moves_frm_to)
+    return moves_frm_to
 
 
 def black_rook_moves(board: list) -> int:
@@ -381,7 +381,7 @@ def black_rook_moves(board: list) -> int:
                         moves_frm_to.append([(c_row, c_col), (c_row, c_col+1)])
                         break
                 c_col = col
-    return len(moves_frm_to)
+    return moves_frm_to
 
 
 def white_knight_moves(board: list) -> int:
@@ -401,7 +401,7 @@ def white_knight_moves(board: list) -> int:
                             pass
                         else:
                             moves_frm_to.append([(row, col), (nr, nc)])
-    return len(moves_frm_to)
+    return moves_frm_to
 
 
 def black_knight_moves(board: list) -> int:
@@ -421,7 +421,7 @@ def black_knight_moves(board: list) -> int:
                             pass
                         else:
                             moves_frm_to.append([(row, col), (nr, nc)])
-    return len(moves_frm_to)
+    return moves_frm_to
 
 
 def white_bishop_moves(board: list) -> int:
@@ -449,7 +449,7 @@ def white_bishop_moves(board: list) -> int:
                             moves.append([(row, col), (nr, nc)])
                             nr += r
                             nc += c
-    return len(moves)
+    return moves
 
 
 def black_bishop_moves(board: list) -> int:
@@ -477,7 +477,7 @@ def black_bishop_moves(board: list) -> int:
                             moves.append([(row, col), (nr, nc)])
                             nr += r
                             nc += c
-    return len(moves)
+    return moves
 
 
 def white_king_moves(board: list) -> list:
