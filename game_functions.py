@@ -279,109 +279,59 @@ def black_pawn_moves(board: list) -> int:
 
 
 def white_rook_moves(board: list) -> int:
-    moves_frm_to = []
+    moves = []
+    directions = [
+        (1, 0),   # down
+        (-1, 0),  # up
+        (0, 1),   # right
+        (0, -1)   # left
+    ]
+
     for row in range(8):
-        c_row = row
         for col in range(8):
-            c_col = col
             if board[row][col] == "R":
-                while c_row > 0:
-                    if board[c_row-1][c_col] == ".":
-                        moves_frm_to.append([(c_row, c_col), (c_row-1, c_col)])
-                        c_row -= 1
-                    elif board[c_row-1][c_col] in "RNBQKP":
-                        break
-                    elif board[c_row-1][c_col] in "rnbqkp":
-                        moves_frm_to.append([(c_row, c_col), (c_row-1, c_col)])
-                        break
-                c_row = row
-
-                while row < 7:
-                    if board[c_row-1][c_col] == ".":
-                        moves_frm_to.append([(c_row, c_col), (c_row+1, c_col)])
-                        c_row += 1
-                    elif board[c_row+1][c_col] in "RNBQKP":
-                        break
-                    elif board[c_row+1][c_col] in "rnbqkp":
-                        moves_frm_to.append([(c_row, c_col), (c_row+1, c_col)])
-                        break
-                c_row = row
-
-                while col > 0:
-                    if board[c_row][c_col-1] == ".":
-                        moves_frm_to.append([(c_row, c_col), (c_row, c_col-1)])
-                        c_col -= 1
-                    elif board[c_row][c_col-1] in "RNBQKP":
-                        break
-                    elif board[c_row][c_col-1] in "rnbqkp":
-                        moves_frm_to.append([(c_row, c_col), (c_row, c_col-1)])
-                        break
-                c_col = col
-
-                while c_col < 7:
-                    if board[c_row][c_col+1] == ".":
-                        moves_frm_to.append([(c_row, c_col), (c_row, c_col+1)])
-                        c_row += 1
-                    elif board[c_row][c_col+1] in "RNBQKP":
-                        break
-                    elif board[c_row][c_col+1] in "rnbqkp":
-                        moves_frm_to.append([(c_row, c_col), (c_row, c_col+1)])
-                        break
-                c_col = col
-    return moves_frm_to
+                for r, c in directions:
+                    nr, nc = row + r, col + c
+                    # keep sliding until off board
+                    while 0 <= nr < 8 and 0 <= nc < 8:
+                        if board[nr][nc] in "RNBKQP": # Friendly block
+                            break
+                        elif board[nr][nc] in "rnbkqp": # Capture
+                            moves.append([(row, col), (nr, nc)])
+                            break
+                        elif board[nr][nc] == ".": # Empty square
+                            moves.append([(row, col), (nr, nc)])
+                            nr += r
+                            nc += c
+    return moves
 
 
 def black_rook_moves(board: list) -> int:
-    moves_frm_to = []
+    moves = []
+    directions = [
+        (1, 0),   # down
+        (-1, 0),  # up
+        (0, 1),   # right
+        (0, -1)   # left
+    ]
+
     for row in range(8):
-        c_row = row
         for col in range(8):
-            c_col = col
             if board[row][col] == "r":
-                while c_row > 0:
-                    if board[c_row-1][c_col] == ".":
-                        moves_frm_to.append([(c_row, c_col), (c_row-1, c_col)])
-                        c_row -= 1
-                    elif board[c_row-1][c_col] in "rnbqkp":
-                        break
-                    elif board[c_row-1][c_col] in "RNBQKP":
-                        moves_frm_to.append([(c_row, c_col), (c_row-1, c_col)])
-                        break
-                c_row = row
-
-                while row < 7:
-                    if board[c_row-1][c_col] == ".":
-                        moves_frm_to.append([(c_row, c_col), (c_row+1, c_col)])
-                        c_row += 1
-                    elif board[c_row+1][c_col] in "rnbqkp":
-                        break
-                    elif board[c_row+1][c_col] in "RNBQKP":
-                        moves_frm_to.append([(c_row, c_col), (c_row+1, c_col)])
-                        break
-                c_row = row
-
-                while col > 0:
-                    if board[c_row][c_col-1] == ".":
-                        moves_frm_to.append([(c_row, c_col), (c_row, c_col-1)])
-                        c_col -= 1
-                    elif board[c_row][c_col-1] in "rnbqkp":
-                        break
-                    elif board[c_row][c_col-1] in "RNBQKP":
-                        moves_frm_to.append([(c_row, c_col), (c_row, c_col-1)])
-                        break
-                c_col = col
-
-                while c_col < 7:
-                    if board[c_row][c_col+1] == ".":
-                        moves_frm_to.append([(c_row, c_col), (c_row, c_col+1)])
-                        c_row += 1
-                    elif board[c_row][c_col+1] in "rnbqkp":
-                        break
-                    elif board[c_row][c_col+1] in "RNBQKP":
-                        moves_frm_to.append([(c_row, c_col), (c_row, c_col+1)])
-                        break
-                c_col = col
-    return moves_frm_to
+                for r, c in directions:
+                    nr, nc = row + r, col + c
+                    # keep sliding until off board
+                    while 0 <= nr < 8 and 0 <= nc < 8:
+                        if board[nr][nc] in "rnbkqp": # Friendly block
+                            break
+                        elif board[nr][nc] in "RNBKQP": # Capture
+                            moves.append([(row, col), (nr, nc)])
+                            break
+                        elif board[nr][nc] == ".": # Empty square
+                            moves.append([(row, col), (nr, nc)])
+                            nr += r
+                            nc += c
+    return moves
 
 
 def white_knight_moves(board: list) -> int:
