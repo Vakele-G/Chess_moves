@@ -644,6 +644,17 @@ def get_all_opponent_moves(board: list, active_color: str) -> list:
     return all_moves
 
 
+def is_check(board: list, active_color: str) -> bool:
+    king_pos = find_king(board, active_color)
+    opponent_moves = get_all_opponent_moves(board, active_color)
+    
+    for move in opponent_moves:
+        if move[1] == king_pos:  # move[1] is destination
+            return True
+    
+    return False
+
+
 def generate_moves(board: list) -> list: # Return list of all possible moves
     raise NotImplementedError("This function is not implemented yet.")
 
