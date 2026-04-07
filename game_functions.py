@@ -536,90 +536,58 @@ def black_king_moves(board: list) -> list:
 
 def white_queen_moves(board: list) -> list:
     moves = []
-
-    # 8 directions: rook + bishop combined
     directions = [
         (-1, 0), (1, 0), (0, -1), (0, 1),     # Rook-like
         (-1, -1), (-1, 1), (1, -1), (1, 1)    # Bishop-like
     ]
 
-    # Find the white queen
-    queen_pos = None
+    # Find ALL white queens (not just the first)
     for r in range(8):
         for c in range(8):
             if board[r][c] == "Q":
-                queen_pos = (r, c)
-                break
-        if queen_pos:
-            break
-
-    if queen_pos is None:
-        return moves
-
-    qr, qc = queen_pos
-
-    # Explore each direction
-    for dr, dc in directions:
-        nr, nc = qr + dr, qc + dc
-
-        while 0 <= nr < 8 and 0 <= nc < 8:
-            target = board[nr][nc]
-
-            if target == ".":
-                moves.append([(qr, qc), (nr, nc)])
-            elif target.islower():  # Capture black piece
-                moves.append([(qr, qc), (nr, nc)])
-                break
-            else:  # Blocked by white piece
-                break
-
-            nr += dr
-            nc += dc
+                # Generate moves for THIS queen
+                for dr, dc in directions:
+                    nr, nc = r + dr, c + dc
+                    while 0 <= nr < 8 and 0 <= nc < 8:
+                        target = board[nr][nc]
+                        if target == ".":
+                            moves.append([(r, c), (nr, nc)])
+                        elif target.islower():  # Capture black
+                            moves.append([(r, c), (nr, nc)])
+                            break
+                        else:  # Blocked by white
+                            break
+                        nr += dr
+                        nc += dc
 
     return moves
 
 
 def black_queen_moves(board: list) -> list:
     moves = []
-
-    # 8 directions: rook + bishop combined
     directions = [
         (-1, 0), (1, 0), (0, -1), (0, 1),     # Rook-like
         (-1, -1), (-1, 1), (1, -1), (1, 1)    # Bishop-like
     ]
 
-    # Find the white queen
-    queen_pos = None
+    # Find ALL black queens (not just the first)
     for r in range(8):
         for c in range(8):
             if board[r][c] == "q":
-                queen_pos = (r, c)
-                break
-        if queen_pos:
-            break
-
-    if queen_pos is None:
-        return moves
-
-    qr, qc = queen_pos
-
-    # Explore each direction
-    for dr, dc in directions:
-        nr, nc = qr + dr, qc + dc
-
-        while 0 <= nr < 8 and 0 <= nc < 8:
-            target = board[nr][nc]
-
-            if target == ".":
-                moves.append([(qr, qc), (nr, nc)])
-            elif target.isupper():  # Capture white piece
-                moves.append([(qr, qc), (nr, nc)])
-                break
-            else:  # Blocked by black piece
-                break
-
-            nr += dr
-            nc += dc
+                # Generate moves for THIS queen
+                for dr, dc in directions:
+                    nr, nc = r + dr, c + dc
+                    while 0 <= nr < 8 and 0 <= nc < 8:
+                        target = board[nr][nc]
+                        if target == ".":
+                            moves.append([(r, c), (nr, nc)])
+                        elif target.isupper():  # Capture white
+                            moves.append([(r, c), (nr, nc)])
+                            break
+                        else:  # Blocked by black
+                            break
+                        nr += dr
+                        nc += dc
 
     return moves
 
