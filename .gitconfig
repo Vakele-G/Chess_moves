@@ -1,6 +1,3 @@
 [user]
     name = Vakele-G
     email = vakelegawd@gmail.com
-
-[includeIf "gitdir:~/Documents/personal_projects/"]
-    path = ~/.gitconfig-work
