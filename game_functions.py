@@ -2,7 +2,7 @@ class Game:
     def __init__(self, fen_string):
         self.board = generate_board(fen_string)
         self.full_move = fen_string.split(" ")[5]
-        self.to_move = fen_string.split(" ")[1]
+        self.active_color : str = fen_string.split(" ")[1]
         self.squares = {"a1": (7,0),
                         "a2":(6,0),
                         "a3":(5,0),
@@ -75,12 +75,23 @@ class Game:
 
         self.board[pos1[0]][pos1[1]] = "."
         self.board[pos2[0]][pos2[1]] = piece
+
+        if self.active_color == "w":
+            self.active_color = "b"
+        elif self.active_color == "b":
+            self.active_color = "w"
     
     def validate_move(self, sq1, sq2) -> bool:
-        pos1 = self.squares[sq1] # (7,3)
+        pos1 = self.squares[sq1] # (7,4)
         pos2 = self.squares[sq2] # (6,4)
+        piece_to_move:str = self.board[pos1[0]][pos1[1]]
 
-        match self.board[pos1[0]][pos1[1]]: #board[7][4]
+        if self.active_color == "w" and piece_to_move.islower():
+            return False
+        if self.active_color == "b" and piece_to_move.isupper():
+            return False
+        
+        match piece_to_move: #board[7][4]
             case "P":
                 return True if [pos1, pos2] in white_pawn_moves(self.board) else False
             case "p":

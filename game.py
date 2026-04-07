@@ -1,17 +1,5 @@
 import sys
-from game_functions import (generate_board, 
-                            print_board, 
-                            game_state, 
-                            white_pawn_moves, 
-                            black_pawn_moves, 
-                            white_rook_moves, 
-                            black_rook_moves, 
-                            white_knight_moves, 
-                            black_knight_moves, 
-                            white_bishop_moves, 
-                            black_bishop_moves,
-                            white_queen_moves,)
-from game_functions import Game
+from game_functions import *
 
 
 '''
@@ -43,7 +31,11 @@ print()
 print_board(new_game.board)
 
 while True:
-    move = input("\nEnter a move (eg. e2 e4): ").strip().split()
+    move = input("\nEnter a move (eg. e2 e4) or 'q' to quit: ").strip().lower()
+    if move == "q":
+        break
+    else:
+        move = move.split()
 
     while not new_game.validate_move(move[0], move[1]):
         move = input("Invalid move. Try again: ").strip().split()
@@ -52,6 +44,7 @@ while True:
     print_board(new_game.board)
     print()
 
+print("Goodbye!")
 
 
 
