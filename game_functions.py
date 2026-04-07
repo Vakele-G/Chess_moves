@@ -611,12 +611,37 @@ def black_queen_moves(board: list) -> list:
     return moves
 
 
-def find_king(board: list, color: str) -> tuple:
-    king = 'K' if color == 'w' else 'k'
+def find_king(board: list, active_color: str) -> tuple:
+    king = 'K' if active_color == 'w' else 'k'
     for row in range(8):
         for col in range(8):
             if board[row][col] == king:
                 return (row, col)
+
+
+def get_all_opponent_moves(board: list, active_color: str) -> list:
+    # Returns moves for the opposite color
+    # color 'w' → get black moves
+    # color 'b' → get white moves
+    all_moves = []
+    if active_color == 'w':
+        # Collect all black piece moves
+        all_moves.extend(black_pawn_moves(board))
+        all_moves.extend(black_rook_moves(board))
+        all_moves.extend(black_knight_moves(board))
+        all_moves.extend(black_bishop_moves(board))
+        all_moves.extend(black_queen_moves(board))
+        all_moves.extend(black_king_moves(board))
+    else:
+        # Collect all white piece moves
+        all_moves.extend(white_pawn_moves(board))
+        all_moves.extend(white_rook_moves(board))
+        all_moves.extend(white_knight_moves(board))
+        all_moves.extend(white_bishop_moves(board))
+        all_moves.extend(white_queen_moves(board))
+        all_moves.extend(white_king_moves(board))
+
+    return all_moves
 
 
 def generate_moves(board: list) -> list: # Return list of all possible moves
