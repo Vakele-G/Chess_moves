@@ -93,29 +93,42 @@ class Game:
         
         match piece_to_move: #board[7][4]
             case "P":
-                return True if [pos1, pos2] in white_pawn_moves(self.board) else False
+                valid = [pos1, pos2] in white_pawn_moves(self.board)
             case "p":
-                return True if [pos1, pos2] in black_pawn_moves(self.board) else False
+                valid = [pos1, pos2] in black_pawn_moves(self.board)
             case "R":
-                return True if [pos1, pos2] in white_rook_moves(self.board) else False
+                valid = [pos1, pos2] in white_rook_moves(self.board)
             case "r":
-                return True if [pos1, pos2] in black_rook_moves(self.board) else False
+                valid = [pos1, pos2] in black_rook_moves(self.board)
             case "N":
-                return True if [pos1, pos2] in white_knight_moves(self.board) else False
+                valid = [pos1, pos2] in white_knight_moves(self.board)
             case "n":
-                return True if [pos1, pos2] in black_knight_moves(self.board) else False
+                valid = [pos1, pos2] in black_knight_moves(self.board)
             case "B":
-                return True if [pos1, pos2] in white_bishop_moves(self.board) else False
+                valid = [pos1, pos2] in white_bishop_moves(self.board)
             case "b":
-                return True if [pos1, pos2] in black_bishop_moves(self.board) else False
+                valid = [pos1, pos2] in black_bishop_moves(self.board)
             case "Q":
-                return True if [pos1, pos2] in white_queen_moves(self.board) else False
+                valid = [pos1, pos2] in white_queen_moves(self.board)
             case "q":
-                return True if [pos1, pos2] in black_queen_moves(self.board) else False
+                valid = [pos1, pos2] in black_queen_moves(self.board)
             case "K":
-                return True if [pos1, pos2] in white_king_moves(self.board) else False
+                valid = [pos1, pos2] in white_king_moves(self.board)
             case "k":
-                return True if [pos1, pos2] in black_king_moves(self.board) else False
+                valid = [pos1, pos2] in black_king_moves(self.board)
+
+        if not valid:
+            return False
+        
+        board_copy = [row[:] for row in self.board]
+        board_copy[pos1[0]][pos1[1]] = "."
+        board_copy[pos2[0]][pos2[1]] = piece_to_move
+
+        if is_check(board_copy, self.active_color):
+            return False
+
+        return True
+
 
 def generate_board(fen_string: str) -> list:
     board_string, to_move, castling_rights, en_passant, half_move, full_move = fen_string.split(" ")
