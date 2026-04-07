@@ -266,7 +266,7 @@ def white_pawn_moves(board: list) -> list:
                             moves_frm_to.append([(row, col), (row-2, col)])
                     if row > 0 and col > 0 and board[row-1][col-1].islower():
                         moves_frm_to.append([(row, col), (row-1, col-1)])
-                    if row > 0 and col > 7 and board[row-1][col+1].islower():
+                    if row > 0 and col < 7 and board[row-1][col+1].islower():
                         moves_frm_to.append([(row, col), (row-1, col+1)])
     return moves_frm_to
 
@@ -282,9 +282,9 @@ def black_pawn_moves(board: list) -> int:
                     if row < 7:
                         if row == 1 and board[row+2][col] == ".":
                             moves_frm_to.append([(row, col), (row+2, col)])
-                    if row < 7 and col > 0 and board[row+1][col-1].islower():
+                    if row < 7 and col > 0 and board[row+1][col-1].isupper():
                         moves_frm_to.append([(row, col), (row+1, col-1)])
-                    if row < 7 and col > 7 and board[row+1][col+1].islower():
+                    if row < 7 and col < 7 and board[row+1][col+1].isupper():
                         moves_frm_to.append([(row, col), (row+1, col+1)])
     return moves_frm_to
 
