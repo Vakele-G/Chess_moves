@@ -611,6 +611,14 @@ def black_queen_moves(board: list) -> list:
     return moves
 
 
+def find_king(board: list, color: str) -> tuple:
+    king = 'K' if color == 'w' else 'k'
+    for row in range(8):
+        for col in range(8):
+            if board[row][col] == king:
+                return (row, col)
+
+
 def generate_moves(board: list) -> list: # Return list of all possible moves
     raise NotImplementedError("This function is not implemented yet.")
 
