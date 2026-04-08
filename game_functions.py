@@ -636,6 +636,53 @@ def is_check(board: list, active_color: str) -> bool:
     return False
 
 
+def has_legal_move(board: list, active_color: str) -> bool:
+    """Check if the active player has at least one legal move."""
+    # Get all possible moves for the active player
+    if active_color == 'w':
+        all_moves = []
+        all_moves.extend(white_pawn_moves(board))
+        all_moves.extend(white_rook_moves(board))
+        all_moves.extend(white_knight_moves(board))
+        all_moves.extend(white_bishop_moves(board))
+        all_moves.extend(white_queen_moves(board))
+        all_moves.extend(white_king_moves(board))
+    else:
+        all_moves = []
+        all_moves.extend(black_pawn_moves(board))
+        all_moves.extend(black_rook_moves(board))
+        all_moves.extend(black_knight_moves(board))
+        all_moves.extend(black_bishop_moves(board))
+        all_moves.extend(black_queen_moves(board))
+        all_moves.extend(black_king_moves(board))
+    
+    # Test each move to see if it leaves the king in check
+    for move in all_moves:
+        pos1, pos2 = move
+        piece = board[pos1[0]][pos1[1]]
+        
+        # Create a copy of the board and make the move
+        board_copy = [row[:] for row in board]
+        board_copy[pos1[0]][pos1[1]] = "."
+        board_copy[pos2[0]][pos2[1]] = piece
+        
+        # Check if this move leaves us in check
+        if not is_check(board_copy, active_color):
+            return True  # Found a legal move
+    
+    return False  # No legal moves
+
+
+def is_checkmate(board: list, active_color: str) -> bool:
+    """Check if the active player is in checkmate."""
+    return is_check(board, active_color) and not has_legal_move(board, active_color)
+
+
+def is_stalemate(board: list, active_color: str) -> bool:
+    """Check if the game is in stalemate (not in check but no legal moves)."""
+    return not is_check(board, active_color) and not has_legal_move(board, active_color)
+
+
 def generate_moves(board: list) -> list: # Return list of all possible moves
     raise NotImplementedError("This function is not implemented yet.")
 
@@ -643,5 +690,4 @@ def generate_moves(board: list) -> list: # Return list of all possible moves
 def apply_move(board, move):
     raise NotImplementedError("This function is not implemented yet.")
 
-# King queen moves function do not work properly
-# validate method might be broke as well
+# pawn promotion limited to queen for now
