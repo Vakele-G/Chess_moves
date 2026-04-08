@@ -68,20 +68,25 @@ class Game:
                         "h7":(1,7),
                         "h8":(0,7)}
 
-    def play(self, sq1, sq2) -> None:
+    def play(self, sq1, sq2, promotion_piece=None) -> None:
         pos1 = self.squares[sq1]
         pos2 = self.squares[sq2]
         piece = self.board[pos1[0]][pos1[1]]
 
         self.board[pos1[0]][pos1[1]] = "."
-        self.board[pos2[0]][pos2[1]] = piece
+        
+        # Handle pawn promotion
+        if promotion_piece:
+            self.board[pos2[0]][pos2[1]] = promotion_piece
+        else:
+            self.board[pos2[0]][pos2[1]] = piece
 
         if self.active_color == "w":
             self.active_color = "b"
         elif self.active_color == "b":
             self.active_color = "w"
     
-    def validate_move(self, sq1, sq2) -> bool:
+    def validate_move(self, sq1, sq2, promotion_piece=None) -> bool:
         pos1 = self.squares[sq1] # (7,4)
         pos2 = self.squares[sq2] # (6,4)
         piece_to_move:str = self.board[pos1[0]][pos1[1]]
@@ -91,11 +96,31 @@ class Game:
         if self.active_color == "b" and piece_to_move.isupper():
             return False
         
+        # Check if this is a pawn promotion move
+        is_promotion = False
+        if piece_to_move in "Pp":
+            if (piece_to_move == "P" and pos2[0] == 0) or (piece_to_move == "p" and pos2[0] == 7):
+                is_promotion = True
+        
+        valid = False  # Initialize valid
+        
         match piece_to_move: #board[7][4]
             case "P":
-                valid = [pos1, pos2] in white_pawn_moves(self.board)
+                if is_promotion:
+                    if promotion_piece and promotion_piece.upper() in "QRBN":
+                        valid = [pos1, pos2, promotion_piece.upper()] in white_pawn_moves(self.board)
+                    else:
+                        return False  # Must specify promotion piece
+                else:
+                    valid = [pos1, pos2] in white_pawn_moves(self.board)
             case "p":
-                valid = [pos1, pos2] in black_pawn_moves(self.board)
+                if is_promotion:
+                    if promotion_piece and promotion_piece.lower() in "qrbn":
+                        valid = [pos1, pos2, promotion_piece.lower()] in black_pawn_moves(self.board)
+                    else:
+                        return False  # Must specify promotion piece
+                else:
+                    valid = [pos1, pos2] in black_pawn_moves(self.board)
             case "R":
                 valid = [pos1, pos2] in white_rook_moves(self.board)
             case "r":
@@ -122,7 +147,11 @@ class Game:
         
         board_copy = [row[:] for row in self.board]
         board_copy[pos1[0]][pos1[1]] = "."
-        board_copy[pos2[0]][pos2[1]] = piece_to_move
+        # For promotion, place the promoted piece instead of the pawn
+        if is_promotion and promotion_piece:
+            board_copy[pos2[0]][pos2[1]] = promotion_piece
+        else:
+            board_copy[pos2[0]][pos2[1]] = piece_to_move
 
         if is_check(board_copy, self.active_color):
             return False
@@ -272,33 +301,81 @@ def white_pawn_moves(board: list) -> list:
         for col in range(8):
             if row > 0:
                 if board[row][col] == "P":
+                    # Normal forward move
                     if board[row-1][col] == ".":
-                        moves_frm_to.append([(row, col), (row-1, col)])
-                    if row > 0:
-                        if row == 6 and board[row-2][col] == ".":
-                            moves_frm_to.append([(row, col), (row-2, col)])
+                        if row-1 == 0:  # Promotion rank
+                            # Add promotion moves (Q, R, B, N)
+                            moves_frm_to.append([(row, col), (row-1, col), "Q"])  # Queen promotion
+                            moves_frm_to.append([(row, col), (row-1, col), "R"])  # Rook promotion
+                            moves_frm_to.append([(row, col), (row-1, col), "B"])  # Bishop promotion
+                            moves_frm_to.append([(row, col), (row-1, col), "N"])  # Knight promotion
+                        else:
+                            moves_frm_to.append([(row, col), (row-1, col)])
+                    
+                    # Double move from starting position
+                    if row == 6 and board[row-2][col] == "." and board[row-1][col] == ".":
+                        moves_frm_to.append([(row, col), (row-2, col)])
+                    
+                    # Captures
                     if row > 0 and col > 0 and board[row-1][col-1].islower():
-                        moves_frm_to.append([(row, col), (row-1, col-1)])
+                        if row-1 == 0:  # Promotion rank
+                            moves_frm_to.append([(row, col), (row-1, col-1), "Q"])  # Queen promotion
+                            moves_frm_to.append([(row, col), (row-1, col-1), "R"])  # Rook promotion
+                            moves_frm_to.append([(row, col), (row-1, col-1), "B"])  # Bishop promotion
+                            moves_frm_to.append([(row, col), (row-1, col-1), "N"])  # Knight promotion
+                        else:
+                            moves_frm_to.append([(row, col), (row-1, col-1)])
+                    
                     if row > 0 and col < 7 and board[row-1][col+1].islower():
-                        moves_frm_to.append([(row, col), (row-1, col+1)])
+                        if row-1 == 0:  # Promotion rank
+                            moves_frm_to.append([(row, col), (row-1, col+1), "Q"])  # Queen promotion
+                            moves_frm_to.append([(row, col), (row-1, col+1), "R"])  # Rook promotion
+                            moves_frm_to.append([(row, col), (row-1, col+1), "B"])  # Bishop promotion
+                            moves_frm_to.append([(row, col), (row-1, col+1), "N"])  # Knight promotion
+                        else:
+                            moves_frm_to.append([(row, col), (row-1, col+1)])
     return moves_frm_to
 
 
-def black_pawn_moves(board: list) -> int:
+def black_pawn_moves(board: list) -> list:
     moves_frm_to = []
     for row in range(8):
         for col in range(8):
             if row < 7:
                 if board[row][col] == "p":
+                    # Normal forward move
                     if board[row+1][col] == ".":
-                        moves_frm_to.append([(row, col), (row+1, col)])
-                    if row < 7:
-                        if row == 1 and board[row+2][col] == ".":
-                            moves_frm_to.append([(row, col), (row+2, col)])
+                        if row+1 == 7:  # Promotion rank
+                            # Add promotion moves (q, r, b, n)
+                            moves_frm_to.append([(row, col), (row+1, col), "q"])  # Queen promotion
+                            moves_frm_to.append([(row, col), (row+1, col), "r"])  # Rook promotion
+                            moves_frm_to.append([(row, col), (row+1, col), "b"])  # Bishop promotion
+                            moves_frm_to.append([(row, col), (row+1, col), "n"])  # Knight promotion
+                        else:
+                            moves_frm_to.append([(row, col), (row+1, col)])
+                    
+                    # Double move from starting position
+                    if row == 1 and board[row+2][col] == "." and board[row+1][col] == ".":
+                        moves_frm_to.append([(row, col), (row+2, col)])
+                    
+                    # Captures
                     if row < 7 and col > 0 and board[row+1][col-1].isupper():
-                        moves_frm_to.append([(row, col), (row+1, col-1)])
+                        if row+1 == 7:  # Promotion rank
+                            moves_frm_to.append([(row, col), (row+1, col-1), "q"])  # Queen promotion
+                            moves_frm_to.append([(row, col), (row+1, col-1), "r"])  # Rook promotion
+                            moves_frm_to.append([(row, col), (row+1, col-1), "b"])  # Bishop promotion
+                            moves_frm_to.append([(row, col), (row+1, col-1), "n"])  # Knight promotion
+                        else:
+                            moves_frm_to.append([(row, col), (row+1, col-1)])
+                    
                     if row < 7 and col < 7 and board[row+1][col+1].isupper():
-                        moves_frm_to.append([(row, col), (row+1, col+1)])
+                        if row+1 == 7:  # Promotion rank
+                            moves_frm_to.append([(row, col), (row+1, col+1), "q"])  # Queen promotion
+                            moves_frm_to.append([(row, col), (row+1, col+1), "r"])  # Rook promotion
+                            moves_frm_to.append([(row, col), (row+1, col+1), "b"])  # Bishop promotion
+                            moves_frm_to.append([(row, col), (row+1, col+1), "n"])  # Knight promotion
+                        else:
+                            moves_frm_to.append([(row, col), (row+1, col+1)])
     return moves_frm_to
 
 
@@ -658,13 +735,18 @@ def has_legal_move(board: list, active_color: str) -> bool:
     
     # Test each move to see if it leaves the king in check
     for move in all_moves:
-        pos1, pos2 = move
+        pos1, pos2 = move[0], move[1]
+        promotion_piece = move[2] if len(move) > 2 else None
         piece = board[pos1[0]][pos1[1]]
         
         # Create a copy of the board and make the move
         board_copy = [row[:] for row in board]
         board_copy[pos1[0]][pos1[1]] = "."
-        board_copy[pos2[0]][pos2[1]] = piece
+        # For promotion, place the promoted piece instead of the pawn
+        if promotion_piece:
+            board_copy[pos2[0]][pos2[1]] = promotion_piece
+        else:
+            board_copy[pos2[0]][pos2[1]] = piece
         
         # Check if this move leaves us in check
         if not is_check(board_copy, active_color):
@@ -689,5 +771,3 @@ def generate_moves(board: list) -> list: # Return list of all possible moves
 
 def apply_move(board, move):
     raise NotImplementedError("This function is not implemented yet.")
-
-# pawn promotion limited to queen for now

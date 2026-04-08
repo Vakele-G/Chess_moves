@@ -31,12 +31,58 @@ while not game_over:
         print("Goodbye.")
         break
     else:
-        move = move.split()
+        move_parts = move.split()
+        if len(move_parts) < 2:
+            print("Invalid move format. Use: from_square to_square [promotion_piece]")
+            continue
+        sq1, sq2 = move_parts[0], move_parts[1]
+        promotion_piece = move_parts[2] if len(move_parts) > 2 else None
 
-    while not new_game.validate_move(move[0], move[1]):
-        move = input("Invalid move. Try again: ").strip().split()
+    # Check if this is a pawn promotion move
+    pos1 = new_game.squares[sq1]
+    pos2 = new_game.squares[sq2]
+    piece = new_game.board[pos1[0]][pos1[1]]
+    is_promotion = False
+    
+    if piece in "Pp":
+        if (piece == "P" and pos2[0] == 0) or (piece == "p" and pos2[0] == 7):
+            is_promotion = True
+            if not promotion_piece:
+                while True:
+                    promotion_piece = input("Pawn promotion! Choose piece (Q/R/B/N): ").strip().upper()
+                    if piece == "p":  # black pawn
+                        promotion_piece = promotion_piece.lower()
+                    if promotion_piece in (["Q", "R", "B", "N"] if piece == "P" else ["q", "r", "b", "n"]):
+                        break
+                    print("Invalid choice. Choose Q, R, B, or N.")
 
-    new_game.play(move[0], move[1])
+    while not new_game.validate_move(sq1, sq2, promotion_piece):
+        move = input("Invalid move. Try again: ").strip().lower()
+        move_parts = move.split()
+        if len(move_parts) < 2:
+            continue
+        sq1, sq2 = move_parts[0], move_parts[1]
+        promotion_piece = move_parts[2] if len(move_parts) > 2 else None
+        
+        # Re-check for promotion
+        pos1 = new_game.squares[sq1]
+        pos2 = new_game.squares[sq2]
+        piece = new_game.board[pos1[0]][pos1[1]]
+        is_promotion = False
+        
+        if piece in "Pp":
+            if (piece == "P" and pos2[0] == 0) or (piece == "p" and pos2[0] == 7):
+                is_promotion = True
+                if not promotion_piece:
+                    while True:
+                        promotion_piece = input("Pawn promotion! Choose piece (Q/R/B/N): ").strip().upper()
+                        if piece == "p":  # black pawn
+                            promotion_piece = promotion_piece.lower()
+                        if promotion_piece in (["Q", "R", "B", "N"] if piece == "P" else ["q", "r", "b", "n"]):
+                            break
+                        print("Invalid choice. Choose Q, R, B, or N.")
+
+    new_game.play(sq1, sq2, promotion_piece)
     print_board(new_game.board)
     print()
     
