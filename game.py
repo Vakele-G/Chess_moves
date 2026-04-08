@@ -15,9 +15,9 @@ print()
 print_board(new_game.board)
 
 # Check initial game state
-if is_checkmate(new_game.board, new_game.active_color):
+if is_checkmate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
     print("Checkmate! This shouldn't happen at game start.")
-elif is_stalemate(new_game.board, new_game.active_color):
+elif is_stalemate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
     print("Stalemate! This shouldn't happen at game start.")
 elif is_check(new_game.board, new_game.active_color):
     color_name = "White" if new_game.active_color == "w" else "Black"
@@ -87,11 +87,11 @@ while not game_over:
     print()
     
     # Check game state after move
-    if is_checkmate(new_game.board, new_game.active_color):
+    if is_checkmate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
         winner = "White" if new_game.active_color == "b" else "Black"
         print(f"Checkmate! {winner} wins!")
         game_over = True
-    elif is_stalemate(new_game.board, new_game.active_color):
+    elif is_stalemate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
         print("Stalemate! The game is a draw.")
         game_over = True
     elif is_check(new_game.board, new_game.active_color):

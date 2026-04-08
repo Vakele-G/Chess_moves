@@ -3,6 +3,7 @@ class Game:
         self.board = generate_board(fen_string)
         self.full_move = fen_string.split(" ")[5]
         self.active_color : str = fen_string.split(" ")[1]
+        self.en_passant : str = fen_string.split(" ")[3]  # Store en passant square
         self.squares = {"a1": (7,0),
                         "a2":(6,0),
                         "a3":(5,0),
@@ -75,16 +76,50 @@ class Game:
 
         self.board[pos1[0]][pos1[1]] = "."
         
+        # Handle en passant capture
+        if piece in "Pp" and self.en_passant != "-":
+            ep_pos = self.squares.get(self.en_passant)
+            if ep_pos and (pos1[0], pos1[1]) != (ep_pos[0], ep_pos[1]):
+                # Check if this is an en passant move
+                if piece == "P" and pos2 == ep_pos:
+                    # White captures black pawn en passant - remove black pawn at pos1's row
+                    self.board[pos1[0]][pos2[1]] = "."
+                elif piece == "p" and pos2 == ep_pos:
+                    # Black captures white pawn en passant - remove white pawn at pos1's row
+                    self.board[pos1[0]][pos2[1]] = "."
+        
         # Handle pawn promotion
         if promotion_piece:
             self.board[pos2[0]][pos2[1]] = promotion_piece
         else:
             self.board[pos2[0]][pos2[1]] = piece
 
+        # Update en passant square
+        new_en_passant = "-"
+        if piece in "Pp":
+            # Check if pawn moved 2 squares
+            if piece == "P" and pos1[0] == 6 and pos2[0] == 4:
+                # White pawn moved 2 squares from rank 2 to rank 4
+                # En passant square is rank 3 (row 5) at same column
+                new_en_passant = self._pos_to_square((5, pos2[1]))
+            elif piece == "p" and pos1[0] == 1 and pos2[0] == 3:
+                # Black pawn moved 2 squares from rank 7 to rank 5
+                # En passant square is rank 6 (row 2) at same column
+                new_en_passant = self._pos_to_square((2, pos2[1]))
+        
+        self.en_passant = new_en_passant
+
         if self.active_color == "w":
             self.active_color = "b"
         elif self.active_color == "b":
             self.active_color = "w"
+    
+    def _pos_to_square(self, pos):
+        """Convert board position (row, col) to algebraic notation (e.g., 'e4')"""
+        row, col = pos
+        files = "abcdefgh"
+        ranks = "87654321"
+        return files[col] + ranks[row]
     
     def validate_move(self, sq1, sq2, promotion_piece=None) -> bool:
         pos1 = self.squares[sq1] # (7,4)
@@ -108,19 +143,23 @@ class Game:
             case "P":
                 if is_promotion:
                     if promotion_piece and promotion_piece.upper() in "QRBN":
-                        valid = [pos1, pos2, promotion_piece.upper()] in white_pawn_moves(self.board)
+                        valid = [pos1, pos2, promotion_piece.upper()] in white_pawn_moves(self.board, self.en_passant, self.squares)
                     else:
                         return False  # Must specify promotion piece
                 else:
-                    valid = [pos1, pos2] in white_pawn_moves(self.board)
+                    # Check for regular moves or en passant
+                    white_moves = white_pawn_moves(self.board, self.en_passant, self.squares)
+                    valid = [pos1, pos2] in white_moves or [pos1, pos2, "EP"] in white_moves
             case "p":
                 if is_promotion:
                     if promotion_piece and promotion_piece.lower() in "qrbn":
-                        valid = [pos1, pos2, promotion_piece.lower()] in black_pawn_moves(self.board)
+                        valid = [pos1, pos2, promotion_piece.lower()] in black_pawn_moves(self.board, self.en_passant, self.squares)
                     else:
                         return False  # Must specify promotion piece
                 else:
-                    valid = [pos1, pos2] in black_pawn_moves(self.board)
+                    # Check for regular moves or en passant
+                    black_moves = black_pawn_moves(self.board, self.en_passant, self.squares)
+                    valid = [pos1, pos2] in black_moves or [pos1, pos2, "EP"] in black_moves
             case "R":
                 valid = [pos1, pos2] in white_rook_moves(self.board)
             case "r":
@@ -147,6 +186,14 @@ class Game:
         
         board_copy = [row[:] for row in self.board]
         board_copy[pos1[0]][pos1[1]] = "."
+        
+        # Check if this is an en passant capture
+        is_en_passant = piece_to_move in "Pp" and self.en_passant != "-" and pos2 == self.squares.get(self.en_passant)
+        
+        if is_en_passant:
+            # Remove the captured pawn (it's on the same rank as the capturing pawn)
+            board_copy[pos1[0]][pos2[1]] = "."
+        
         # For promotion, place the promoted piece instead of the pawn
         if is_promotion and promotion_piece:
             board_copy[pos2[0]][pos2[1]] = promotion_piece
@@ -295,8 +342,14 @@ def check_castling_rights(fen_string: str) -> str:
             raise ValueError("Invalid castling rights")
 
 
-def white_pawn_moves(board: list) -> list:
+def white_pawn_moves(board: list, en_passant: str = "-", squares_dict = None) -> list:
     moves_frm_to = []
+    
+    # Convert en_passant square to coordinates if available
+    ep_pos = None
+    if en_passant != "-" and squares_dict:
+        ep_pos = squares_dict.get(en_passant)
+    
     for row in range(8):
         for col in range(8):
             if row > 0:
@@ -334,11 +387,27 @@ def white_pawn_moves(board: list) -> list:
                             moves_frm_to.append([(row, col), (row-1, col+1), "N"])  # Knight promotion
                         else:
                             moves_frm_to.append([(row, col), (row-1, col+1)])
+                    
+                    # En passant captures (white pawn on rank 5)
+                    if ep_pos and row == 3:  # White pawn on rank 5 (board[3])
+                        # Check left diagonal en passant
+                        if col > 0 and (row-1, col-1) == ep_pos:
+                            moves_frm_to.append([(row, col), (row-1, col-1), "EP"])
+                        # Check right diagonal en passant
+                        if col < 7 and (row-1, col+1) == ep_pos:
+                            moves_frm_to.append([(row, col), (row-1, col+1), "EP"])
+    
     return moves_frm_to
 
 
-def black_pawn_moves(board: list) -> list:
+def black_pawn_moves(board: list, en_passant: str = "-", squares_dict = None) -> list:
     moves_frm_to = []
+    
+    # Convert en_passant square to coordinates if available
+    ep_pos = None
+    if en_passant != "-" and squares_dict:
+        ep_pos = squares_dict.get(en_passant)
+    
     for row in range(8):
         for col in range(8):
             if row < 7:
@@ -376,6 +445,16 @@ def black_pawn_moves(board: list) -> list:
                             moves_frm_to.append([(row, col), (row+1, col+1), "n"])  # Knight promotion
                         else:
                             moves_frm_to.append([(row, col), (row+1, col+1)])
+                    
+                    # En passant captures (black pawn on rank 4)
+                    if ep_pos and row == 4:  # Black pawn on rank 4 (board[4])
+                        # Check left diagonal en passant
+                        if col > 0 and (row+1, col-1) == ep_pos:
+                            moves_frm_to.append([(row, col), (row+1, col-1), "EP"])
+                        # Check right diagonal en passant
+                        if col < 7 and (row+1, col+1) == ep_pos:
+                            moves_frm_to.append([(row, col), (row+1, col+1), "EP"])
+    
     return moves_frm_to
 
 
@@ -713,12 +792,12 @@ def is_check(board: list, active_color: str) -> bool:
     return False
 
 
-def has_legal_move(board: list, active_color: str) -> bool:
+def has_legal_move(board: list, active_color: str, en_passant: str = "-", squares_dict = None) -> bool:
     """Check if the active player has at least one legal move."""
     # Get all possible moves for the active player
     if active_color == 'w':
         all_moves = []
-        all_moves.extend(white_pawn_moves(board))
+        all_moves.extend(white_pawn_moves(board, en_passant, squares_dict))
         all_moves.extend(white_rook_moves(board))
         all_moves.extend(white_knight_moves(board))
         all_moves.extend(white_bishop_moves(board))
@@ -726,7 +805,7 @@ def has_legal_move(board: list, active_color: str) -> bool:
         all_moves.extend(white_king_moves(board))
     else:
         all_moves = []
-        all_moves.extend(black_pawn_moves(board))
+        all_moves.extend(black_pawn_moves(board, en_passant, squares_dict))
         all_moves.extend(black_rook_moves(board))
         all_moves.extend(black_knight_moves(board))
         all_moves.extend(black_bishop_moves(board))
@@ -736,15 +815,21 @@ def has_legal_move(board: list, active_color: str) -> bool:
     # Test each move to see if it leaves the king in check
     for move in all_moves:
         pos1, pos2 = move[0], move[1]
-        promotion_piece = move[2] if len(move) > 2 else None
+        special_move = move[2] if len(move) > 2 else None
         piece = board[pos1[0]][pos1[1]]
         
         # Create a copy of the board and make the move
         board_copy = [row[:] for row in board]
         board_copy[pos1[0]][pos1[1]] = "."
-        # For promotion, place the promoted piece instead of the pawn
-        if promotion_piece:
-            board_copy[pos2[0]][pos2[1]] = promotion_piece
+        
+        # Handle en passant capture
+        if piece in "Pp" and special_move == "EP":
+            # Remove the captured pawn
+            board_copy[pos1[0]][pos2[1]] = "."
+            board_copy[pos2[0]][pos2[1]] = piece
+        # Handle promotion
+        elif special_move and special_move not in "EP":
+            board_copy[pos2[0]][pos2[1]] = special_move
         else:
             board_copy[pos2[0]][pos2[1]] = piece
         
@@ -755,14 +840,14 @@ def has_legal_move(board: list, active_color: str) -> bool:
     return False  # No legal moves
 
 
-def is_checkmate(board: list, active_color: str) -> bool:
+def is_checkmate(board: list, active_color: str, en_passant: str = "-", squares_dict = None) -> bool:
     """Check if the active player is in checkmate."""
-    return is_check(board, active_color) and not has_legal_move(board, active_color)
+    return is_check(board, active_color) and not has_legal_move(board, active_color, en_passant, squares_dict)
 
 
-def is_stalemate(board: list, active_color: str) -> bool:
+def is_stalemate(board: list, active_color: str, en_passant: str = "-", squares_dict = None) -> bool:
     """Check if the game is in stalemate (not in check but no legal moves)."""
-    return not is_check(board, active_color) and not has_legal_move(board, active_color)
+    return not is_check(board, active_color) and not has_legal_move(board, active_color, en_passant, squares_dict)
 
 
 def generate_moves(board: list) -> list: # Return list of all possible moves
