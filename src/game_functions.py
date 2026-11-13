@@ -4,6 +4,7 @@ class Game:
         self.full_move = fen_string.split(" ")[5]
         self.active_color : str = fen_string.split(" ")[1]
         self.en_passant : str = fen_string.split(" ")[3]  # Store en passant square
+        self.castling : str = fen_string.split(" ")[2]
         self.squares = {"a1": (7,0),
                         "a2":(6,0),
                         "a3":(5,0),

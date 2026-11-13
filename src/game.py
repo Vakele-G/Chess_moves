@@ -3,7 +3,7 @@ from game_functions import *
 
 
 print("/////////////////////////////////////////////////")
-print("Type 'new game' to begin a fresh game as white OR")
+print('ENTER "new game" to begin game as white OR')
 fen_string = input("enter a FEN string to play from that position: ").strip().lower()
 
 if fen_string == "new game":
@@ -16,9 +16,10 @@ print_board(new_game.board)
 
 # Check initial game state
 if is_checkmate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
-    print("Checkmate! This shouldn't happen at game start.")
+    winner = "White" if new_game.active_color == "b" else "Black"
+    print(f"Checkmate! {winner} wins!")
 elif is_stalemate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
-    print("Stalemate! This shouldn't happen at game start.")
+    print("Stalemate! The game is a draw.")
 elif is_check(new_game.board, new_game.active_color):
     color_name = "White" if new_game.active_color == "w" else "Black"
     print(f"{color_name} is in check!")
@@ -33,17 +34,16 @@ while not game_over:
     else:
         move_parts = move.split()
         if len(move_parts) < 2:
-            print("Invalid move format. Use: from_square to_square [promotion_piece]")
+            print("Invalid move. Use: from_square to_square [promotion_piece]")
             continue
         sq1, sq2 = move_parts[0], move_parts[1]
-        promotion_piece = move_parts[2] if len(move_parts) > 2 else None
+        promotion_piece = move_parts[2] if len(move_parts) > 2 else None        #*****
 
     # Check if this is a pawn promotion move
     pos1 = new_game.squares[sq1]
     pos2 = new_game.squares[sq2]
     piece = new_game.board[pos1[0]][pos1[1]]
     is_promotion = False
-    
     if piece in "Pp":
         if (piece == "P" and pos2[0] == 0) or (piece == "p" and pos2[0] == 7):
             is_promotion = True
@@ -55,6 +55,8 @@ while not game_over:
                     if promotion_piece in (["Q", "R", "B", "N"] if piece == "P" else ["q", "r", "b", "n"]):
                         break
                     print("Invalid choice. Choose Q, R, B, or N.")
+
+
 
     while not new_game.validate_move(sq1, sq2, promotion_piece):
         move = input("Invalid move. Try again: ").strip().lower()
