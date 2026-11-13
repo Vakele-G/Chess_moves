@@ -1,5 +1,5 @@
 import unittest
-from game_functions import generate_board, board_to_fen
+from src.game_functions import generate_board, board_to_fen
 
 class ViewFenTest(unittest.TestCase):
     def test_board(self):
