@@ -206,6 +206,42 @@ class Game:
 
         return True
 
+    def _update_castling_rights(self,piece :str, start :tuple[int, int], end :tuple[int, int], captured :str) -> None:
+        """Remove castling rights after a king/rook move or rook capture."""
+        rights = set() if self.castling == "-" else set(self.castling)
+
+        # Moving the king loses both rights for that colour.
+        if piece == "K":
+            rights -= {"K", "Q"}
+        elif piece == "k":
+            rights -= {"k", "q"}
+
+        # A rook leaving its home square loses that side's right.
+        if piece == "R":
+            if start == (7, 7):
+                rights.discard("K")
+            elif start == (7, 0):
+                rights.discard("Q")
+        elif piece == "r":
+            if start == (0, 7):
+                rights.discard("k")
+            elif start == (0, 0):
+                rights.discard("q")
+
+        # A rook captured on its home square loses that side's right.
+        if captured == "R":
+            if end == (7, 7):
+                rights.discard("K")
+            elif end == (7, 0):
+                rights.discard("Q")
+        elif captured == "r":
+            if end == (0, 7):
+                rights.discard("k")
+            elif end == (0, 0):
+                rights.discard("q")
+
+        self.castling = "".join(c for c in "KQkq" if c in rights) or "-"
+
 
 KNIGHT_OFFSETS = (
         (2, 1), (2, -1),
@@ -940,6 +976,9 @@ def generate_moves(board: list) -> list: # Return list of all possible moves
 
 def apply_move(board, move):
     raise NotImplementedError("This function is not implemented yet.")
+
+
+
 
 
 
