@@ -777,6 +777,70 @@ def black_queen_moves(board: list) -> list:
     return moves
 
 
+def _castling_moves(board :list, color :str, castling_rights :str) -> list:
+    """Return all fully legal castling moves for `color`.
+
+    Each move is [king_start, king_end, flag]:
+        [..., "O-O"]   kingside
+        [..., "O-O-O"] queenside
+
+    Checks:
+        - the FEN still grants the right;
+        - the king and rook are on their home squares;
+        - every square between them is empty;
+        - the king is not in check;
+        - the king does not cross or land on an attacked square.
+    """
+    if not castling_rights or castling_rights == "-":
+        return []
+
+    row = 7 if color == "w" else 0
+    king = "K" if color == "w" else "k"
+    rook = "R" if color == "w" else "r"
+    enemy = opponent(color)
+    rights = set(castling_rights)
+    moves = []
+
+    # The king must still be on e1/e8 and must not be in check.
+    if board[row][4] != king:
+        return moves
+
+    if is_square_attacked(board, (row, 4), enemy):
+        return moves
+
+    # Kingside: f and g must be empty.
+    kingside_right = "K" if color == "w" else "k"
+    if kingside_right in rights:
+        if (
+            board[row][5] == "."
+            and board[row][6] == "."
+            and board[row][7] == rook
+        ):
+            if not any(
+                is_square_attacked(board, (row, col), enemy)
+                for col in (4, 5, 6)
+            ):
+                moves.append([(row, 4), (row, 6), "O-O"])
+
+    # Queenside: b, c and d must be empty. The b-square may be attacked;
+    # the king only crosses e1-d1-c1.
+    queenside_right = "Q" if color == "w" else "q"
+    if queenside_right in rights:
+        if (
+            board[row][1] == "."
+            and board[row][2] == "."
+            and board[row][3] == "."
+            and board[row][0] == rook
+        ):
+            if not any(
+                is_square_attacked(board, (row, col), enemy)
+                for col in (4, 3, 2)
+            ):
+                moves.append([(row, 4), (row, 2), "O-O-O"])
+
+    return moves
+
+
 def get_all_opponent_moves(board: list, active_color: str) -> list:
     # Returns moves for the opposite color
     # color 'w' → get black moves
