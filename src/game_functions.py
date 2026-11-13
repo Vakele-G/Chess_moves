@@ -207,6 +207,34 @@ class Game:
         return True
 
 
+KNIGHT_OFFSETS = (
+        (2, 1), (2, -1),
+        (-2, 1), (-2, -1),
+        (1, 2), (1, -2),
+        (-1, 2), (-1, -2)
+    )
+
+BiSHOP_DIRECTIONS = (
+        (1, 1),   # down-right
+        (1, -1),  # down-left
+        (-1, 1),  # up-right
+        (-1, -1)  # up-left
+    )
+
+ROOK_DIRECTIONS = (
+        (1, 0),   # down
+        (-1, 0),  # up
+        (0, 1),   # right
+        (0, -1)   # left
+    )
+
+KING_DIRECTIONS = (
+        (-1, -1), (-1, 0), (-1, 1),
+        (0, -1),           (0, 1),
+        (1, -1),  (1, 0),  (1, 1),
+    )
+
+
 def generate_board(fen_string: str) -> list:
     board_string, to_move, castling_rights, en_passant, half_move, full_move = fen_string.split(" ")
 
@@ -749,14 +777,6 @@ def black_queen_moves(board: list) -> list:
     return moves
 
 
-def find_king(board: list, active_color: str) -> tuple:
-    king = 'K' if active_color == 'w' else 'k'
-    for row in range(8):
-        for col in range(8):
-            if board[row][col] == king:
-                return (row, col)
-
-
 def get_all_opponent_moves(board: list, active_color: str) -> list:
     # Returns moves for the opposite color
     # color 'w' → get black moves
@@ -782,15 +802,14 @@ def get_all_opponent_moves(board: list, active_color: str) -> list:
     return all_moves
 
 
-def is_check(board: list, active_color: str) -> bool:
+def is_check(board :list, active_color :str) -> bool:
     king_pos = find_king(board, active_color)
     opponent_moves = get_all_opponent_moves(board, active_color)
+
+    if king_pos is None:
+        return False
     
-    for move in opponent_moves:
-        if move[1] == king_pos:  # move[1] is destination
-            return True
-    
-    return False
+    return is_square_attacked(board, king_pos, opponent(active_color))
 
 
 def has_legal_move(board: list, active_color: str, en_passant: str = "-", squares_dict = None) -> bool:
@@ -857,3 +876,105 @@ def generate_moves(board: list) -> list: # Return list of all possible moves
 
 def apply_move(board, move):
     raise NotImplementedError("This function is not implemented yet.")
+
+
+
+# ------HELPER FUNCTIONS------
+
+def in_bounds(row :int, col :int) -> bool:
+    """Return True when (row, col) is on the 8x8 board."""
+    return 0 <= row < 8 and 0 <= col < 8
+
+def square_name(position :tuple[int, int]) -> str:
+    """
+    Convert (row, col) to algebraic notation,
+    e.g. (7, 4) -> 'e1'.
+    """
+    row, col = position
+    return "abcdefg"[col] + "87654321"[row]
+
+def piece_color(piece :str) -> str | None:
+    """Return 'w', 'b', or None for an empty square."""
+    if piece == ".":
+        return None
+    return "w" if piece.isupper() else "b"
+
+def opponent(color: str) -> str:
+    """Return the opposite colour."""
+    return "b" if color == "w" else "w"
+
+def find_king(board :list, active_color :str) -> tuple | None:
+    king = 'K' if active_color == 'w' else 'k'
+    for row in range(8):
+        for col in range(8):
+            if board[row][col] == king:
+                return (row, col)
+
+def is_square_attacked(board :list, pos :tuple[int, int], by_color :str) -> bool:
+    """Return True if any piece of `by_color` attacks `pos`.
+
+    Pinned pieces still count as attacking. This matches the FIDE rule
+    """
+    row, col = pos
+
+    # Pawn attacks.
+    # A white pawn attacks upward, so it must be one row below the target.
+    # A black pawn is one row above.
+    pawn = "P" if by_color == "w" else "p"
+    pawn_row = row + 1 if by_color == "w" else row - 1
+
+    for dc in (-1, 1):
+        pc = col + dc
+        if in_bounds(pawn_row, pc) and board[pawn_row][pc] == pawn:
+            return True
+
+    # Knight attacks.
+    knight = "N" if by_color == "w" else "n"
+    for dr, dc in KNIGHT_OFFSETS:
+        r, c = row + dr, col + dc
+        if in_bounds(r, c) and board[r][c] == knight:
+            return True
+
+    # King attacks.
+    king = "K" if by_color == "w" else "k"
+    for dr, dc in KING_DIRECTIONS:
+        r, c = row + dr, col + dc
+        if in_bounds(r, c) and board[r][c] == king:
+            return True
+
+    # Rook and queen attacks.
+    rook = "R" if by_color == "w" else "r"
+    queen = "Q" if by_color == "w" else "q"
+
+    for dr, dc in ROOK_DIRECTIONS:
+        r, c = row + dr, col + dc
+
+        while in_bounds(r, c):
+            piece = board[r][c]
+
+            if piece != ".":
+                if piece == rook or piece == queen:
+                    return True
+                break
+
+            r += dr
+            c += dc
+
+    # Bishop and queen attacks.
+    bishop = "B" if by_color == "w" else "b"
+
+    for dr, dc in BISHOP_DIRECTIONS:
+        r, c = row + dr, col + dc
+
+        while in_bounds(r, c):
+            piece = board[r][c]
+
+            if piece != ".":
+                if piece == bishop or piece == queen:
+                    return True
+                break
+
+            r += dr
+            c += dc
+
+    return False
