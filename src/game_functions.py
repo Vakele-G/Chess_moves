@@ -676,7 +676,7 @@ def black_bishop_moves(board: list) -> int:
 
 
 def king_moves(board :list, color :str, castling_rights :str = "-") -> list:
-    """Return king moves for color, including legal castling moves."""
+    """Return king moves for `color`, including legal castling moves."""
     start = find_king(board, color)
 
     if start is None:
@@ -830,6 +830,28 @@ def _castling_moves(board :list, color :str, castling_rights :str) -> list:
     return moves
 
 
+def get_all_moves(board: list,color: str,en_passant: str = "-",squares_dict: dict | None = None, castling_rights: str = "-") -> list:
+    """Return all pseudo-legal moves for `color`."""
+    if color == "w":
+        moves = []
+        moves.extend(white_pawn_moves(board, en_passant, squares_dict))
+        moves.extend(white_rook_moves(board))
+        moves.extend(white_knight_moves(board))
+        moves.extend(white_bishop_moves(board))
+        moves.extend(white_queen_moves(board))
+        moves.extend(white_king_moves(board, castling_rights))
+        return moves
+
+    moves = []
+    moves.extend(black_pawn_moves(board, en_passant, squares_dict))
+    moves.extend(black_rook_moves(board))
+    moves.extend(black_knight_moves(board))
+    moves.extend(black_bishop_moves(board))
+    moves.extend(black_queen_moves(board))
+    moves.extend(black_king_moves(board, castling_rights))
+    return moves
+
+
 def get_all_opponent_moves(board: list, active_color: str) -> list:
     # Returns moves for the opposite color
     # color 'w' → get black moves
@@ -865,62 +887,70 @@ def is_check(board :list, active_color :str) -> bool:
     return is_square_attacked(board, king_pos, opponent(active_color))
 
 
-def has_legal_move(board: list, active_color: str, en_passant: str = "-", squares_dict = None) -> bool:
-    """Check if the active player has at least one legal move."""
-    # Get all possible moves for the active player
-    if active_color == 'w':
-        all_moves = []
-        all_moves.extend(white_pawn_moves(board, en_passant, squares_dict))
-        all_moves.extend(white_rook_moves(board))
-        all_moves.extend(white_knight_moves(board))
-        all_moves.extend(white_bishop_moves(board))
-        all_moves.extend(white_queen_moves(board))
-        all_moves.extend(white_king_moves(board))
-    else:
-        all_moves = []
-        all_moves.extend(black_pawn_moves(board, en_passant, squares_dict))
-        all_moves.extend(black_rook_moves(board))
-        all_moves.extend(black_knight_moves(board))
-        all_moves.extend(black_bishop_moves(board))
-        all_moves.extend(black_queen_moves(board))
-        all_moves.extend(black_king_moves(board))
-    
-    # Test each move to see if it leaves the king in check
-    for move in all_moves:
-        pos1, pos2 = move[0], move[1]
-        special_move = move[2] if len(move) > 2 else None
-        piece = board[pos1[0]][pos1[1]]
-        
-        # Create a copy of the board and make the move
-        board_copy = [row[:] for row in board]
-        board_copy[pos1[0]][pos1[1]] = "."
-        
-        # Handle en passant capture
-        if piece in "Pp" and special_move == "EP":
-            # Remove the captured pawn
-            board_copy[pos1[0]][pos2[1]] = "."
-            board_copy[pos2[0]][pos2[1]] = piece
-        # Handle promotion
-        elif special_move and special_move not in "EP":
-            board_copy[pos2[0]][pos2[1]] = special_move
-        else:
-            board_copy[pos2[0]][pos2[1]] = piece
-        
-        # Check if this move leaves us in check
+def has_legal_move(board: list, active_color: str, en_passant: str = "-", squares_dict: dict|None = None, castling_rights: str = "-") -> bool:
+    """Return True if active side has at least one legal move."""
+    for move in get_all_moves(board, active_color, en_passant, squares_dict, castling_rights):
+        board_copy = apply_move_to_board(board, move)
+
         if not is_check(board_copy, active_color):
-            return True  # Found a legal move
-    
-    return False  # No legal moves
+            return True
+
+    return False
 
 
-def is_checkmate(board :list, active_color :str, en_passant :str = "-", squares_dict :dict = None) -> bool:
+def is_checkmate(board :list, active_color :str, en_passant :str = "-", squares_dict :dict|None = None, castling_rights: str = "-") -> bool:
     """Check if the active player is in checkmate."""
-    return is_check(board, active_color) and not has_legal_move(board, active_color, en_passant, squares_dict)
+    return is_check(board, active_color) and not has_legal_move(board, active_color, en_passant, squares_dict, castling_rights)
 
 
-def is_stalemate(board: list, active_color: str, en_passant: str = "-", squares_dict = None) -> bool:
-    """Check if the game is in stalemate (not in check but no legal moves)."""
-    return not is_check(board, active_color) and not has_legal_move(board, active_color, en_passant, squares_dict)
+def is_stalemate(board: list, active_color: str, en_passant: str = "-", squares_dict :dict|None = None, castling_rights: str = "-") -> bool:
+    """Check if the game is in stalemate (not in check but no legal move exits)."""
+    return not is_check(board, active_color) and not has_legal_move(board, active_color, en_passant, squares_dict, castling_rights)
+
+
+def apply_move_to_board(board :list, move :list) -> list:
+    """Return a copy of `board` after applying a move.
+
+    A move is [from_pos, to_pos] with an optional third item:
+        "EP"          -> en passant capture
+        "O-O"         -> king-side castling
+        "O-O-O"       -> queen-side castling
+        "Q"/"R"/"B"/"N" (or lowercase) -> promotion piece
+
+    This helper does NOT update castling rights, en passant target,
+    move counters or the active colour. Game.play() owns that state.
+    """
+    result = [row[:] for row in board]
+
+    start, end = move[0], move[1]
+    special = move[2] if len(move) > 2 else None
+    piece = result[start[0]][start[1]]
+
+    # Remove the moving piece first.
+    result[start[0]][start[1]] = "."
+
+    if special == "EP":
+        # The captured pawn is beside the destination, not on it.
+        result[start[0]][end[1]] = "."
+
+    elif special in ("O-O", "O-O-O"):
+        # Castling: move the rook to its new square too.
+        row = start[0]
+        if special == "O-O":
+            rook_from, rook_to = (row, 7), (row, 5)
+        else:
+            rook_from, rook_to = (row, 0), (row, 3)
+
+        result[rook_to[0]][rook_to[1]] = result[rook_from[0]][rook_from[1]]
+        result[rook_from[0]][rook_from[1]] = "."
+
+    # Promotion replaces the pawn; otherwise place the original piece.
+    if special and special not in ("EP", "O-O", "O-O-O"):
+        result[end[0]][end[1]] = special
+    else:
+        result[end[0]][end[1]] = piece
+
+    return result
 
 
 def generate_moves(board: list) -> list: # Return list of all possible moves
