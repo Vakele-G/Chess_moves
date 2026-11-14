@@ -1,6 +1,6 @@
-import sys
 from game_functions import *
 
+PROMOTION_PIECES = "QRBN"
 
 print("/////////////////////////////////////////////////")
 print('ENTER "new game" to begin game as white OR')
@@ -12,6 +12,7 @@ else:
     new_game = Game(fen_string)
 
 print()
+
 print_board(new_game.board)
 
 # Check initial game state

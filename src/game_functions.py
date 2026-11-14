@@ -1,10 +1,12 @@
+import re
+
 class Game:
 
     def __init__(self, fen_string :str):
         state = parse_fen(fen_string)
 
         self.board = state["board"]
-        self.half_move = state["half_nove"]
+        self.half_move = state["half_move"]
         self.full_move = state["full_move"]
         self.active_color : str = state["active_color"]
         self.en_passant : str = state["en_passant"]  # Store en passant square
@@ -1018,7 +1020,7 @@ def is_square_attacked(board :list, pos :tuple[int, int], by_color :str) -> bool
     # Bishop and queen attacks.
     bishop = "B" if by_color == "w" else "b"
 
-    for dr, dc in BISHOP_DIRECTIONS:
+    for dr, dc in BiSHOP_DIRECTIONS:
         r, c = row + dr, col + dc
 
         while in_bounds(r, c):
@@ -1045,6 +1047,122 @@ PIECE_MOVE_FUNCTIONS = {
         "Q": white_queen_moves,
         "q": black_queen_moves,
         }
+
+
+def parse_fen(fen_string: str) -> dict:
+    """Parse and validate a complete FEN string.
+
+    Returns a dict with:
+        board, active_color, castling, en_passant, half_move, full_move
+
+    Raises:
+        ValueError: for any malformed field, with a human-readable message.
+    """
+    fields = fen_string.strip().split()
+    if len(fields) != 6:
+        raise ValueError(
+            "FEN must have 6 fields: placement, turn, castling, "
+            "en passant, half-move, full-move"
+        )
+
+    placement, active_color, castling, en_passant, half_move, full_move = fields
+
+    # --- Piece placement -------------------------------------------------
+    ranks = placement.split("/")
+    if len(ranks) != 8:
+        raise ValueError("FEN placement must contain exactly 8 ranks")
+
+    board = []
+    for rank_index, rank in enumerate(ranks):
+        row = []
+        previous_was_digit = False
+
+        for char in rank:
+            if char.isdigit():
+                if previous_was_digit:
+                    raise ValueError(
+                        f"Rank {8 - rank_index} has adjacent digits: {rank!r}"
+                    )
+
+                count = int(char)
+                if not 1 <= count <= 8:
+                    raise ValueError(
+                        f"Invalid empty-square count {char!r} "
+                        f"in rank {rank!r}"
+                    )
+
+                row.extend(["."] * count)
+                previous_was_digit = True
+
+            elif char in PIECE_CHARS:
+                row.append(char)
+                previous_was_digit = False
+
+            else:
+                raise ValueError(
+                    f"Invalid character {char!r} in rank {rank!r}"
+                )
+
+        if len(row) != 8:
+            raise ValueError(
+                f"Rank {8 - rank_index} describes {len(row)} squares, "
+                f"expected 8: {rank!r}"
+            )
+
+        board.append(row)
+
+    # --- Side to move ----------------------------------------------------
+    if active_color not in ("w", "b"):
+        raise ValueError("Side to move must be 'w' or 'b'")
+
+    # --- Castling rights -------------------------------------------------
+    if castling != "-" and (
+        not castling or not CASTLING_RE.fullmatch(castling)
+    ):
+        raise ValueError(
+            "Castling field must be '-' or a subset of 'KQkq' in that order"
+        )
+
+    # --- En passant target ----------------------------------------------
+    if en_passant != "-" and not EN_PASSANT_RE.fullmatch(en_passant):
+        raise ValueError(
+            "En passant square must be '-' or a square on rank 3 or 6"
+        )
+
+    # --- Move counters ---------------------------------------------------
+    try:
+        half_move_int = int(half_move)
+        full_move_int = int(full_move)
+    except ValueError as exc:
+        raise ValueError(
+            "Half-move and full-move counters must be integers"
+        ) from exc
+
+    if half_move_int < 0:
+        raise ValueError("Half-move clock cannot be negative")
+    if full_move_int < 1:
+        raise ValueError("Full-move number must be at least 1")
+
+    # --- Exactly one king per side --------------------------------------
+    flat = "".join("".join(row) for row in board)
+    if flat.count("K") != 1 or flat.count("k") != 1:
+        raise ValueError(
+            "FEN must contain exactly one white king and one black king"
+        )
+
+    return {
+        "board": board,
+        "active_color": active_color,
+        "castling": castling,
+        "en_passant": en_passant,
+        "half_move": half_move_int,
+        "full_move": full_move_int,
+    }
+
+
+PIECE_CHARS = set("rnbqkpRNBQKP")
+CASTLING_RE = re.compile(r"^K?Q?k?q?$")
+EN_PASSANT_RE = re.compile(r"^[a-h][36]$")
 
 SQUARES = {
     "a1": (7,0),
