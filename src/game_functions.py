@@ -1,119 +1,86 @@
 class Game:
-    def __init__(self, fen_string):
-        self.board = generate_board(fen_string)
-        self.full_move = fen_string.split(" ")[5]
-        self.active_color : str = fen_string.split(" ")[1]
-        self.en_passant : str = fen_string.split(" ")[3]  # Store en passant square
-        self.castling : str = fen_string.split(" ")[2]
-        self.squares = {"a1": (7,0),
-                        "a2":(6,0),
-                        "a3":(5,0),
-                        "a4":(4,0),
-                        "a5":(3,0),
-                        "a6":(2,0),
-                        "a7":(1,0),
-                        "a8":(0,0),
-                        "b1": (7,1),
-                        "b2":(6,1),
-                        "b3":(5,1),
-                        "b4":(4,1),
-                        "b5":(3,1),
-                        "b6":(2,1),
-                        "b7":(1,1),
-                        "b8":(0,1),
-                        "c1": (7,2),
-                        "c2":(6,2),
-                        "c3":(5,2),
-                        "c4":(4,2),
-                        "c5":(3,2),
-                        "c6":(2,2),
-                        "c7":(1,2),
-                        "c8":(0,2),
-                        "d1": (7,3),
-                        "d2":(6,3),
-                        "d3":(5,3),
-                        "d4":(4,3),
-                        "d5":(3,3),
-                        "d6":(2,3),
-                        "d7":(1,3),
-                        "d8":(0,3),
-                        "e1": (7,4),
-                        "e2":(6,4),
-                        "e3":(5,4),
-                        "e4":(4,4),
-                        "e5":(3,4),
-                        "e6":(2,4),
-                        "e7":(1,4),
-                        "e8":(0,4),
-                        "f1": (7,5),
-                        "f2":(6,5),
-                        "f3":(5,5),
-                        "f4":(4,5),
-                        "f5":(3,5),
-                        "f6":(2,5),
-                        "f7":(1,5),
-                        "f8":(0,5),
-                        "g1": (7,6),
-                        "g2":(6,6),
-                        "g3":(5,6),
-                        "g4":(4,6),
-                        "g5":(3,6),
-                        "g6":(2,6),
-                        "g7":(1,6),
-                        "g8":(0,6),
-                        "h1": (7,7),
-                        "h2":(6,7),
-                        "h3":(5,7),
-                        "h4":(4,7),
-                        "h5":(3,7),
-                        "h6":(2,7),
-                        "h7":(1,7),
-                        "h8":(0,7)}
 
-    def play(self, sq1, sq2, promotion_piece=None) -> None:
-        pos1 = self.squares[sq1]
-        pos2 = self.squares[sq2]
-        piece = self.board[pos1[0]][pos1[1]]
+    def __init__(self, fen_string :str):
+        state = parse_fen(fen_string)
 
-        self.board[pos1[0]][pos1[1]] = "."
-        
-        # Handle en passant capture
-        if piece in "Pp" and self.en_passant != "-":
-            ep_pos = self.squares.get(self.en_passant)
-            if ep_pos and (pos1[0], pos1[1]) != (ep_pos[0], ep_pos[1]):
-                # Check if this is an en passant move
-                if piece == "P" and pos2 == ep_pos:
-                    # White captures black pawn en passant - remove black pawn at pos1's row
-                    self.board[pos1[0]][pos2[1]] = "."
-                elif piece == "p" and pos2 == ep_pos:
-                    # Black captures white pawn en passant - remove white pawn at pos1's row
-                    self.board[pos1[0]][pos2[1]] = "."
-        
-        # Handle pawn promotion
-        if promotion_piece:
-            self.board[pos2[0]][pos2[1]] = promotion_piece
+        self.board = state["board"]
+        self.half_move = state["half_nove"]
+        self.full_move = state["full_move"]
+        self.active_color : str = state["active_color"]
+        self.en_passant : str = state["en_passant"]  # Store en passant square
+        self.castling : str = state["castling"]
+        self.squares = SQUARES
+
+    def play(self, sq1 :str, sq2 :str, promotion_piece :str|None = None) -> None:
+        """Play a validated move and update all game state.
+
+        Raises:
+            ValueError: if the move is illegal or malformed.
+        """
+        if not self.validate_move(sq1, sq2, promotion_piece):
+            raise ValueError(f"Illegal move: {sq1} {sq2}")
+
+        start = self.squares[sq1]
+        end = self.squares[sq2]
+        piece = self.board[start[0]][start[1]]
+        captured = self.board[end[0]][end[1]]
+
+        reaches_last_rank = (
+            (piece == "P" and end[0] == 0) or (piece == "p" and end[0] == 7)
+            )
+
+        is_castling = piece in "Kk" and abs(end[1] - start[1]) == 2
+        is_en_passant = (
+            piece in "Pp"
+            and self.en_passant != "-"
+            and end == self.squares[self.en_passant]
+            and captured == "."
+        )
+
+        # Defensive check: an en passant target must really have a pawn.
+        if is_en_passant:
+            adjacent = (start[0], end[1])
+            expected_pawn = "p" if piece == "P" else "P"
+            if self.board[adjacent[0]][adjacent[1]] != expected_pawn:
+                raise ValueError("No pawn available for en passant capture")
+
+        # Build the move descriptor understood by apply_move_to_board().
+        if is_castling:
+            flag = "O-O" if end[1] > start[1] else "O-O-O"
+            move = [start, end, flag]
+        elif is_en_passant:
+            move = [start, end, "EP"]
+        elif reaches_last_rank:
+            promoted = (
+                promotion_piece.upper()
+                if piece == "P"
+                else promotion_piece.lower()
+            )
+            move = [start, end, promoted]
         else:
-            self.board[pos2[0]][pos2[1]] = piece
+            move = [start, end]
 
-        # Update en passant square
-        new_en_passant = "-"
-        if piece in "Pp":
-            # Check if pawn moved 2 squares
-            if piece == "P" and pos1[0] == 6 and pos2[0] == 4:
-                # White pawn moved 2 squares from rank 2 to rank 4
-                # En passant square is rank 3 (row 5) at same column
-                new_en_passant = self._pos_to_square((5, pos2[1]))
-            elif piece == "p" and pos1[0] == 1 and pos2[0] == 3:
-                # Black pawn moved 2 squares from rank 7 to rank 5
-                # En passant square is rank 6 (row 2) at same column
-                new_en_passant = self._pos_to_square((2, pos2[1]))
-        
-        self.en_passant = new_en_passant
+        self.board = apply_move_to_board(self.board, move)
 
-        if self.active_color == "w":
-            self.active_color = "b"
-        elif self.active_color == "b":
-            self.active_color = "w"
+        self._update_castling_rights(piece, start, end, captured)
+
+        # En passant is only available immediately after a two-square push.
+        self.en_passant = "-"
+        if piece in "Pp" and abs(end[0] - start[0]) == 2:
+            middle = ((start[0] + end[0]) // 2, start[1])
+            self.en_passant = square_name(middle)
+
+        # The half-move clock resets on a pawn move or a capture.
+        if piece in "Pp" or captured != "." or is_en_passant:
+            self.half_move = 0
+        else:
+            self.half_move += 1
+
+        # The full-move number increases after Black's move.
+        if self.active_color == "b":
+            self.full_move += 1
+
+        self.active_color = opponent(self.active_color)
     
     def _pos_to_square(self, pos):
         """Convert board position (row, col) to algebraic notation (e.g., 'e4')"""
@@ -122,92 +89,70 @@ class Game:
         ranks = "87654321"
         return files[col] + ranks[row]
     
-    def validate_move(self, sq1, sq2, promotion_piece=None) -> bool:
-        pos1 = self.squares[sq1] # (7,4)
-        pos2 = self.squares[sq2] # (6,4)
-        piece_to_move:str = self.board[pos1[0]][pos1[1]]
+    def validate_move(self, sq1 :str, sq2 :str, promotion_piece :str|None = None) -> bool:
+        """Return True if the move is legal for the side to move.
+         
+        It rejects:
+        - unknown squares, empty start squares, same-square moves
+        - moving the opponent's piece
+        - illegal piece movement
+        - moves that leave your own king in check
+        - missing promotion piece, or a promotion piece on an ordinary move
+        """
 
-        if self.active_color == "w" and piece_to_move.islower():
+        if sq1 not in self.squares or sq2 not in self.squares:
             return False
-        if self.active_color == "b" and piece_to_move.isupper():
+        if sq1 == sq2:
             return False
-        
-        # Check if this is a pawn promotion move
-        is_promotion = False
-        if piece_to_move in "Pp":
-            if (piece_to_move == "P" and pos2[0] == 0) or (piece_to_move == "p" and pos2[0] == 7):
-                is_promotion = True
-        
-        valid = False  # Initialize valid
-        
-        match piece_to_move: #board[7][4]
-            case "P":
-                if is_promotion:
-                    if promotion_piece and promotion_piece.upper() in "QRBN":
-                        valid = [pos1, pos2, promotion_piece.upper()] in white_pawn_moves(self.board, self.en_passant, self.squares)
-                    else:
-                        return False  # Must specify promotion piece
-                else:
-                    # Check for regular moves or en passant
-                    white_moves = white_pawn_moves(self.board, self.en_passant, self.squares)
-                    valid = [pos1, pos2] in white_moves or [pos1, pos2, "EP"] in white_moves
-            case "p":
-                if is_promotion:
-                    if promotion_piece and promotion_piece.lower() in "qrbn":
-                        valid = [pos1, pos2, promotion_piece.lower()] in black_pawn_moves(self.board, self.en_passant, self.squares)
-                    else:
-                        return False  # Must specify promotion piece
-                else:
-                    # Check for regular moves or en passant
-                    black_moves = black_pawn_moves(self.board, self.en_passant, self.squares)
-                    valid = [pos1, pos2] in black_moves or [pos1, pos2, "EP"] in black_moves
-            case "R":
-                valid = [pos1, pos2] in white_rook_moves(self.board)
-            case "r":
-                valid = [pos1, pos2] in black_rook_moves(self.board)
-            case "N":
-                valid = [pos1, pos2] in white_knight_moves(self.board)
-            case "n":
-                valid = [pos1, pos2] in black_knight_moves(self.board)
-            case "B":
-                valid = [pos1, pos2] in white_bishop_moves(self.board)
-            case "b":
-                valid = [pos1, pos2] in black_bishop_moves(self.board)
-            case "Q":
-                valid = [pos1, pos2] in white_queen_moves(self.board)
-            case "q":
-                valid = [pos1, pos2] in black_queen_moves(self.board)
-            case "K":
-                valid = [pos1, pos2] in white_king_moves(self.board)
-            case "k":
-                valid = [pos1, pos2] in black_king_moves(self.board)
 
-        if not valid:
+        start = self.squares[sq1]
+        end = self.squares[sq2]
+        piece = self.board[start[0]][start[1]]
+
+        if piece == "." or piece_color(piece) != self.active_color:
             return False
-        
-        board_copy = [row[:] for row in self.board]
-        board_copy[pos1[0]][pos1[1]] = "."
-        
-        # Check if this is an en passant capture
-        is_en_passant = piece_to_move in "Pp" and self.en_passant != "-" and pos2 == self.squares.get(self.en_passant)
-        
-        if is_en_passant:
-            # Remove the captured pawn (it's on the same rank as the capturing pawn)
-            board_copy[pos1[0]][pos2[1]] = "."
-        
-        # For promotion, place the promoted piece instead of the pawn
-        if is_promotion and promotion_piece:
-            board_copy[pos2[0]][pos2[1]] = promotion_piece
+
+        reaches_last_rank = (
+            (piece == "P" and end[0] == 0) or (piece == "p" and end[0] == 7)
+        )
+
+        if reaches_last_rank:
+            if not promotion_piece or promotion_piece.upper() not in "QRBN":
+                return False
+            promotion_piece = (promotion_piece.upper() if piece == "P" else promotion_piece.lower())
+        elif promotion_piece:
+            # A promotion piece is meaningless on a non-promotion move.
+            return False
+
+        if piece in "Pp":
+            moves = (
+                white_pawn_moves(self.board, self.en_passant, self.squares)
+                if piece == "P"
+                else black_pawn_moves(self.board, self.en_passant, self.squares)
+            )
+        elif piece in "Kk":
+            moves = (
+                white_king_moves(self.board, self.castling)
+                if piece == "K"
+                else black_king_moves(self.board, self.castling)
+            )
         else:
-            board_copy[pos2[0]][pos2[1]] = piece_to_move
+            moves = PIECE_MOVE_FUNCTIONS[piece](self.board)
 
-        if is_check(board_copy, self.active_color):
+        matching = [m for m in moves if m[0] == start and m[1] == end]
+        if not matching:
             return False
 
-        return True
+        # For promotions, the exact chosen piece must be generated.
+        if reaches_last_rank and [start, end, promotion_piece] not in matching:
+            return False
 
-    def _update_castling_rights(self,piece :str, start :tuple[int, int], end :tuple[int, int], captured :str) -> None:
-        """Remove castling rights after a king/rook move or rook capture."""
+        move = [start, end, promotion_piece] if reaches_last_rank else matching[0]
+        board_copy = apply_move_to_board(self.board, move)
+        return not is_check(board_copy, self.active_color)
+
+    def _update_castling_rights(self, piece :str, start :tuple[int, int], end :tuple[int, int], captured :str) -> None:
+        """Remove castling rights after a king/rook moves or rook capture."""
         rights = set() if self.castling == "-" else set(self.castling)
 
         # Moving the king loses both rights for that colour.
@@ -216,7 +161,7 @@ class Game:
         elif piece == "k":
             rights -= {"k", "q"}
 
-        # A rook leaving its home square loses that side's right.
+        # A rook that leaves its home square loses that side's right.
         if piece == "R":
             if start == (7, 7):
                 rights.discard("K")
@@ -242,6 +187,28 @@ class Game:
 
         self.castling = "".join(c for c in "KQkq" if c in rights) or "-"
 
+    def status(self) -> str | None:
+        """Return 'checkmate', 'stalemate', 'check' or None."""
+        in_check = is_check(self.board, self.active_color)
+        if not has_legal_move(self.board, self.active_color, self.en_passant, self.squares, self.castling):
+            return "checkmate" if in_check else "stalemate"
+        
+        return "check" if in_check else None
+
+    def to_fen(self) -> str:
+        """Return the complete current position as a FEN string."""
+
+        return " ".join(
+            [
+                board_to_fen(self.board),
+                self.active_color,
+                self.castling,
+                self.en_passant,
+                str(self.half_move),
+                str(self.full_move),
+            ]
+        )
+    
 
 KNIGHT_OFFSETS = (
         (2, 1), (2, -1),
@@ -831,7 +798,9 @@ def _castling_moves(board :list, color :str, castling_rights :str) -> list:
 
 
 def get_all_moves(board: list,color: str,en_passant: str = "-",squares_dict: dict | None = None, castling_rights: str = "-") -> list:
-    """Return all pseudo-legal moves for `color`."""
+    """Return all pseudo-legal moves for `color`.
+    Pseudo-legal means the piece movement is correct, but the move may leave the moving side's own king in check.
+    """
     if color == "w":
         moves = []
         moves.extend(white_pawn_moves(board, en_passant, squares_dict))
@@ -1064,3 +1033,82 @@ def is_square_attacked(board :list, pos :tuple[int, int], by_color :str) -> bool
             c += dc
 
     return False
+
+
+PIECE_MOVE_FUNCTIONS = {
+        "R": white_rook_moves,
+        "r": black_rook_moves,
+        "N": white_knight_moves,
+        "n": black_knight_moves,
+        "B": white_bishop_moves,
+        "b": black_bishop_moves,
+        "Q": white_queen_moves,
+        "q": black_queen_moves,
+        }
+
+SQUARES = {
+    "a1": (7,0),
+    "a2":(6,0),
+    "a3":(5,0),
+    "a4":(4,0),
+    "a5":(3,0),
+    "a6":(2,0),
+    "a7":(1,0),
+    "a8":(0,0),
+    "b1": (7,1),
+    "b2":(6,1),
+    "b3":(5,1),
+    "b4":(4,1),
+    "b5":(3,1),
+    "b6":(2,1),
+    "b7":(1,1),
+    "b8":(0,1),
+    "c1": (7,2),
+    "c2":(6,2),
+    "c3":(5,2),
+    "c4":(4,2),
+    "c5":(3,2),
+    "c6":(2,2),
+    "c7":(1,2),
+    "c8":(0,2),
+    "d1": (7,3),
+    "d2":(6,3),
+    "d3":(5,3),
+    "d4":(4,3),
+    "d5":(3,3),
+    "d6":(2,3),
+    "d7":(1,3),
+    "d8":(0,3),
+    "e1": (7,4),
+    "e2":(6,4),
+    "e3":(5,4),
+    "e4":(4,4),
+    "e5":(3,4),
+    "e6":(2,4),
+    "e7":(1,4),
+    "e8":(0,4),
+    "f1": (7,5),
+    "f2":(6,5),
+    "f3":(5,5),
+    "f4":(4,5),
+    "f5":(3,5),
+    "f6":(2,5),
+    "f7":(1,5),
+    "f8":(0,5),
+    "g1": (7,6),
+    "g2":(6,6),
+    "g3":(5,6),
+    "g4":(4,6),
+    "g5":(3,6),
+    "g6":(2,6),
+    "g7":(1,6),
+    "g8":(0,6),
+    "h1": (7,7),
+    "h2":(6,7),
+    "h3":(5,7),
+    "h4":(4,7),
+    "h5":(3,7),
+    "h6":(2,7),
+    "h7":(1,7),
+    "h8":(0,7)
+    }
