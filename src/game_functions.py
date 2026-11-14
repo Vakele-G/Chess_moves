@@ -675,84 +675,37 @@ def black_bishop_moves(board: list) -> int:
     return moves
 
 
-def white_king_moves(board: list) -> list:
+def king_moves(board :list, color :str, castling_rights :str = "-") -> list:
+    """Return king moves for color, including legal castling moves."""
+    start = find_king(board, color)
+
+    if start is None:
+        return []
+
     moves = []
+    king_row, king_col = start
 
-    # All 8 possible king directions
-    directions = [
-        (-1, -1), (-1, 0), (-1, 1),
-        (0, -1),          (0, 1),
-        (1, -1),  (1, 0), (1, 1)
-    ]
+    for direction_row, direction_col in KING_DIRECTIONS:
+        new_row, new_col = king_row + direction_row, king_col + direction_col
 
-    # Find the white king
-    king_pos = None
-    for r in range(8):
-        for c in range(8):
-            if board[r][c] == "K":
-                king_pos = (r, c)
-                break
-        if king_pos:
-            break
+        if not in_bounds(new_row, new_col):
+            continue
+        target = board[new_row][new_col]
 
-    if king_pos is None:
-        return moves
+        # Empty square or enemy piece. (Friendly pieces block)
+        if target == "." or piece_color(target) != color:
+            moves.append([(king_row, king_col), (new_row, new_col)])
 
-    kr, kc = king_pos
-
-    # Generate legal moves
-    for dr, dc in directions:
-        nr, nc = kr + dr, kc + dc
-
-        # Check board bounds
-        if 0 <= nr < 8 and 0 <= nc < 8:
-            target = board[nr][nc]
-
-            # Empty square or capture black piece
-            if target not in "RNBQKP":
-                moves.append([(kr, kc), (nr, nc)])
-
+    moves.extend(_castling_moves(board, color, castling_rights))
     return moves
 
 
-def black_king_moves(board: list) -> list:
-    moves = []
+def white_king_moves(board: list, castling_rights :str = "-") -> list:
+   return king_moves(board, "w", castling_rights)
 
-    # All 8 possible king directions
-    directions = [
-        (-1, -1), (-1, 0), (-1, 1),
-        (0, -1),          (0, 1),
-        (1, -1),  (1, 0), (1, 1)
-    ]
 
-    # Find the white king
-    king_pos = None
-    for r in range(8):
-        for c in range(8):
-            if board[r][c] == "k":
-                king_pos = (r, c)
-                break
-        if king_pos:
-            break
-
-    if king_pos is None:
-        return moves
-
-    kr, kc = king_pos
-
-    # Generate legal moves
-    for dr, dc in directions:
-        nr, nc = kr + dr, kc + dc
-
-        # Check board bounds
-        if 0 <= nr < 8 and 0 <= nc < 8:
-            target = board[nr][nc]
-
-            # Empty square or capture black piece
-            if target not in "rnbqkp":
-                moves.append([(kr, kc), (nr, nc)])
-
-    return moves
+def black_king_moves(board: list, castling_rights :str = "-") -> list:
+    return king_moves(board, "b", castling_rights)
                 
 
 def white_queen_moves(board: list) -> list:
@@ -960,7 +913,7 @@ def has_legal_move(board: list, active_color: str, en_passant: str = "-", square
     return False  # No legal moves
 
 
-def is_checkmate(board: list, active_color: str, en_passant: str = "-", squares_dict = None) -> bool:
+def is_checkmate(board :list, active_color :str, en_passant :str = "-", squares_dict :dict = None) -> bool:
     """Check if the active player is in checkmate."""
     return is_check(board, active_color) and not has_legal_move(board, active_color, en_passant, squares_dict)
 
