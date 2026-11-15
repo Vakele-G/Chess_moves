@@ -1149,6 +1149,56 @@ def parse_fen(fen_string: str) -> dict:
             "FEN must contain exactly one white king and one black king"
         )
 
+    # --- Pawns can't stand on the first or last rank ---------------------
+    if any(c in "Pp" for c in board[0] + board[7]):
+        raise ValueError("Pawns cannot be on the first or eighth rank")
+
+    # --- Sane piece counts ----------------------------------------------
+    for pawn, side in (("P", "White"), ("p", "Black")):
+        if flat.count(pawn) > 8:
+            raise ValueError(f"{side} has more than 8 pawns")
+    if sum(ch.isupper() for ch in flat) > 16 or sum(ch.islower() for ch in flat) > 16:
+        raise ValueError("A side cannot have more than 16 pieces")
+
+    # --- Castling rights must match king/rook placement ------------------
+    for right, king_pos, king, rook_pos, rook in (
+        ("K", (7, 4), "K", (7, 7), "R"),
+        ("Q", (7, 4), "K", (7, 0), "R"),
+        ("k", (0, 4), "k", (0, 7), "r"),
+        ("q", (0, 4), "k", (0, 0), "r"),
+    ):
+        if right in castling and (
+            board[king_pos[0]][king_pos[1]] != king
+            or board[rook_pos[0]][rook_pos[1]] != rook
+        ):
+            raise ValueError(f"Castling right '{right}' doesn't match the piece placement")
+
+    # --- En passant target must be consistent with the position ----------
+    if en_passant != "-":
+        col = "abcdefgh".index(en_passant[0])
+        if active_color == "w":
+            # Black just pushed: target on rank 6, black pawn on rank 5, rank 7 empty.
+            if en_passant[1] != "6":
+                raise ValueError("With White to move, the en passant square must be on rank 6")
+            target_row, pawn_row, origin_row, pawn = 2, 3, 1, "p"
+        else:
+            if en_passant[1] != "3":
+                raise ValueError("With Black to move, the en passant square must be on rank 3")
+            target_row, pawn_row, origin_row, pawn = 5, 4, 6, "P"
+
+        if (
+            board[target_row][col] != "."
+            or board[origin_row][col] != "."
+            or board[pawn_row][col] != pawn
+        ):
+            raise ValueError("En passant square doesn't match a pawn that just moved two squares")
+
+    # --- The side NOT to move can't be in check --------------------------
+    waiting = opponent(active_color)
+    waiting_king = find_king(board, waiting)
+    if is_square_attacked(board, waiting_king, active_color):
+        raise ValueError(f"{'White' if waiting == 'w' else 'Black'} is in check but it isn't their turn")
+
     return {
         "board": board,
         "active_color": active_color,
