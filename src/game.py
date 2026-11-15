@@ -1,102 +1,99 @@
 from game_functions import *
 
+
+START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 PROMOTION_PIECES = "QRBN"
 
-print("/////////////////////////////////////////////////")
-print('ENTER "new game" to begin game as white OR')
-fen_string = input("enter a FEN string to play from that position: ").strip().lower()
 
-if fen_string == "new game":
-    new_game = Game("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-else:
-    new_game = Game(fen_string)
+def main() -> None:
+    game = read_game()
+    print()
+    print_board(game.board)
 
-print()
+    if report_status(game):
+        return
 
-print_board(new_game.board)
+    while True:
+        move = ask_move(game)
+        if move is None:
+            print("Goodbye.")
+            return
 
-# Check initial game state
-if is_checkmate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
-    winner = "White" if new_game.active_color == "b" else "Black"
-    print(f"Checkmate! {winner} wins!")
-elif is_stalemate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
-    print("Stalemate! The game is a draw.")
-elif is_check(new_game.board, new_game.active_color):
-    color_name = "White" if new_game.active_color == "w" else "Black"
-    print(f"{color_name} is in check!")
+        game.play(*move) # The * unpacks 'move' into parameters
+        print()
+        print_board(game.board)
+        print()
 
-game_over = False
+        if report_status(game):
+            return
 
-while not game_over:
-    move = input("\nEnter a move (eg. e2 e4) or 'q' to quit: ").strip().lower()
-    if move == "q":
-        print("Goodbye.")
-        break
-    else:
-        move_parts = move.split()
-        if len(move_parts) < 2:
+
+def read_game() -> Game:
+    print("/////////////////////////////////////////////////")
+    print('ENTER "new game" to begin game as white OR')
+
+    while True:
+        text = input("enter a FEN string to play from that position: ").strip()
+        try:
+            if text.lower() == "new game":
+                return Game(START_FEN)
+            else:
+                return Game(text)
+        except ValueError as e:
+            print(f"Invalid FEN: {e}")
+
+
+def report_status(game :Game) -> bool:
+    """Print check/mate/stalemate info.
+    Return True if the game is over.
+    """
+    status = game.status()
+    if status == "checkmate":
+        winner = "Black" if game.active_color == "w" else "White"
+        print(f"Checkmate! {winner} wins!")
+        return True
+    if status == "stalemate":
+        print("Stalemate! The game is a draw.")
+        return True
+    if status == "check":
+        print(f"{'White' if game.active_color == 'w' else 'Black'} is in check!")
+    return False
+
+
+def ask_move(game :Game):
+    """Return (sq1, sq2, promotion) for a legal move, or None to quit."""
+    while True:
+        text = input("\nEnter a move (eg. e2 e4) or 'q' to quit: ").strip().lower()
+        if text == "q":
+            return None
+
+        parts = text.split()
+        if len(parts) not in (2, 3) or parts[0] not in game.squares or parts[1] not in game.squares:
             print("Invalid move. Use: from_square to_square [promotion_piece]")
             continue
-        sq1, sq2 = move_parts[0], move_parts[1]
-        promotion_piece = move_parts[2] if len(move_parts) > 2 else None        #*****
 
-    # Check if this is a pawn promotion move
-    pos1 = new_game.squares[sq1]
-    pos2 = new_game.squares[sq2]
-    piece = new_game.board[pos1[0]][pos1[1]]
-    is_promotion = False
-    if piece in "Pp":
-        if (piece == "P" and pos2[0] == 0) or (piece == "p" and pos2[0] == 7):
-            is_promotion = True
-            if not promotion_piece:
+        sq1, sq2 = parts[0], parts[1]
+        promo = parts[2] if len(parts) == 3 else None
+
+        row, col = game.squares[sq1]
+        piece = game.board[row][col]
+        last_rank = 0 if piece == "P" else 7
+        is_promotion = piece in ("P", "p") and game.squares[sq2][0] == last_rank
+
+        # Only ask for a promotion piece if the move is otherwise legal.
+        if is_promotion and promo is None:
+            if game.validate_move(sq1, sq2, "Q" if piece == "P" else "q"):
                 while True:
-                    promotion_piece = input("Pawn promotion! Choose piece (Q/R/B/N): ").strip().upper()
-                    if piece == "p":  # black pawn
-                        promotion_piece = promotion_piece.lower()
-                    if promotion_piece in (["Q", "R", "B", "N"] if piece == "P" else ["q", "r", "b", "n"]):
+                    choice = input("Pawn promotion! Choose piece (Q/R/B/N): ").strip().lower()
+                    if choice in ("q", "r", "b", "n"):
+                        promo = choice
                         break
                     print("Invalid choice. Choose Q, R, B, or N.")
 
+        if game.validate_move(sq1, sq2, promo):
+            return sq1, sq2, promo
+        print("Illegal move.")
 
 
-    while not new_game.validate_move(sq1, sq2, promotion_piece):
-        move = input("Invalid move. Try again: ").strip().lower()
-        move_parts = move.split()
-        if len(move_parts) < 2:
-            continue
-        sq1, sq2 = move_parts[0], move_parts[1]
-        promotion_piece = move_parts[2] if len(move_parts) > 2 else None
-        
-        # Re-check for promotion
-        pos1 = new_game.squares[sq1]
-        pos2 = new_game.squares[sq2]
-        piece = new_game.board[pos1[0]][pos1[1]]
-        is_promotion = False
-        
-        if piece in "Pp":
-            if (piece == "P" and pos2[0] == 0) or (piece == "p" and pos2[0] == 7):
-                is_promotion = True
-                if not promotion_piece:
-                    while True:
-                        promotion_piece = input("Pawn promotion! Choose piece (Q/R/B/N): ").strip().upper()
-                        if piece == "p":  # black pawn
-                            promotion_piece = promotion_piece.lower()
-                        if promotion_piece in (["Q", "R", "B", "N"] if piece == "P" else ["q", "r", "b", "n"]):
-                            break
-                        print("Invalid choice. Choose Q, R, B, or N.")
-
-    new_game.play(sq1, sq2, promotion_piece)
-    print_board(new_game.board)
-    print()
-    
-    # Check game state after move
-    if is_checkmate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
-        winner = "White" if new_game.active_color == "b" else "Black"
-        print(f"Checkmate! {winner} wins!")
-        game_over = True
-    elif is_stalemate(new_game.board, new_game.active_color, new_game.en_passant, new_game.squares):
-        print("Stalemate! The game is a draw.")
-        game_over = True
-    elif is_check(new_game.board, new_game.active_color):
-        color_name = "White" if new_game.active_color == "w" else "Black"
-        print(f"{color_name} is in check!")
+if __name__ == "__main__":
+    main()
