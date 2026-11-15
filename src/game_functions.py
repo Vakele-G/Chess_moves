@@ -850,7 +850,6 @@ def get_all_opponent_moves(board: list, active_color: str) -> list:
 
 def is_check(board :list, active_color :str) -> bool:
     king_pos = find_king(board, active_color)
-    opponent_moves = get_all_opponent_moves(board, active_color)
 
     if king_pos is None:
         return False
@@ -948,7 +947,7 @@ def square_name(position :tuple[int, int]) -> str:
     e.g. (7, 4) -> 'e1'.
     """
     row, col = position
-    return "abcdefg"[col] + "87654321"[row]
+    return "abcdefgh"[col] + "87654321"[row]
 
 def piece_color(piece :str) -> str | None:
     """Return 'w', 'b', or None for an empty square."""
