@@ -22,7 +22,6 @@ def main() -> None:
         game.play(*move) # The * unpacks 'move' into parameters
         print()
         print_board(game.board)
-        print()
 
         if report_status(game):
             return
@@ -50,13 +49,24 @@ def report_status(game :Game) -> bool:
     status = game.status()
     if status == "checkmate":
         winner = "Black" if game.active_color == "w" else "White"
-        print(f"Checkmate! {winner} wins!")
+        print(f"\nCheckmate! {winner} wins!")
         return True
+    
     if status == "stalemate":
-        print("Stalemate! The game is a draw.")
+        print("\nStalemate! The game is a draw.")
         return True
+
+    if status == "fifty_move":
+        print("\nDraw by the fifty-move rule.")
+        return True
+    
+    if status == "insufficient_material":
+        print("\nDraw: insufficient material to checkmate.")
+        return True
+    
     if status == "check":
-        print(f"{'White' if game.active_color == 'w' else 'Black'} is in check!")
+        print(f"\n{'White' if game.active_color == 'w' else 'Black'} is in check!")
+
     return False
 
 

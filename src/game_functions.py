@@ -190,10 +190,15 @@ class Game:
         self.castling = "".join(c for c in "KQkq" if c in rights) or "-"
 
     def status(self) -> str | None:
-        """Return 'checkmate', 'stalemate', 'check' or None."""
+        """Return 'check', checkmate', 'stalemate', 'fift_move', 'insufficient_material' or None."""
         in_check = is_check(self.board, self.active_color)
         if not has_legal_move(self.board, self.active_color, self.en_passant, self.squares, self.castling):
             return "checkmate" if in_check else "stalemate"
+
+        if self.half_move >= 100:
+            return "fifty_move"
+        if has_insufficient_material(self.board):
+            return "insufficient_material"
         
         return "check" if in_check else None
 
@@ -876,6 +881,29 @@ def is_checkmate(board :list, active_color :str, en_passant :str = "-", squares_
 def is_stalemate(board: list, active_color: str, en_passant: str = "-", squares_dict :dict|None = None, castling_rights: str = "-") -> bool:
     """Check if the game is in stalemate (not in check but no legal move exits)."""
     return not is_check(board, active_color) and not has_legal_move(board, active_color, en_passant, squares_dict, castling_rights)
+
+
+def has_insufficient_material(board :list) -> bool:
+    """True when neither side can possibly deliver checkmate.
+
+    Covers: K v K, K+B v K, K+N v K, and positions where the only
+    other pieces are bishops that all stand on the same colour of square.
+    (Two knights can still mate with cooperation, so that is NOT counted.)
+    """
+    minors = []
+    for r in range(8):
+        for c in range(8):
+            piece = board[r][c]
+            if piece in (".", "K", "k"):
+                continue
+            if piece.lower() in "nb":
+                minors.append((piece.lower(), (r + c) % 2))
+            else:
+                return False  # a pawn, rook or queen can always force mate
+
+    if len(minors) <= 1:
+        return True
+    return all(p == "b" for p, _ in minors) and len({shade for _, shade in minors}) == 1
 
 
 def apply_move_to_board(board :list, move :list) -> list:
