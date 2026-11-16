@@ -190,7 +190,7 @@ class Game:
         self.castling = "".join(c for c in "KQkq" if c in rights) or "-"
 
     def status(self) -> str | None:
-        """Return 'check', checkmate', 'stalemate', 'fift_move', 'insufficient_material' or None."""
+        """Return 'check', checkmate', 'stalemate', 'fifth_move', 'insufficient_material' or None."""
         in_check = is_check(self.board, self.active_color)
         if not has_legal_move(self.board, self.active_color, self.en_passant, self.squares, self.castling):
             return "checkmate" if in_check else "stalemate"
