@@ -98,7 +98,6 @@ class EnPassantTest(unittest.TestCase):
         self.assertEqual(game.en_passant, "-")
 
     def test_h_file_double_push_sets_target(self):
-        # Regression for the "abcdefg" typo in square_name.
         white = Game("4k3/8/8/8/8/8/7P/4K3 w - - 0 1")
         white.play("h2", "h4")
         self.assertEqual(white.en_passant, "h3")
