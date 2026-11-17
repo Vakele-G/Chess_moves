@@ -497,7 +497,7 @@ def black_pawn_moves(board: list, en_passant: str = "-", squares_dict = None) ->
     return moves_frm_to
 
 
-def white_rook_moves(board: list) -> int:
+def white_rook_moves(board: list) -> list:
     moves = []
     directions = [
         (1, 0),   # down
@@ -525,7 +525,7 @@ def white_rook_moves(board: list) -> int:
     return moves
 
 
-def black_rook_moves(board: list) -> int:
+def black_rook_moves(board: list) -> list:
     moves = []
     directions = [
         (1, 0),   # down
@@ -553,7 +553,7 @@ def black_rook_moves(board: list) -> int:
     return moves
 
 
-def white_knight_moves(board: list) -> int:
+def white_knight_moves(board: list) -> list:
     moves_frm_to = []
     offsets =  [(2, 1), (2, -1),
                 (-2, 1), (-2, -1),
@@ -573,7 +573,7 @@ def white_knight_moves(board: list) -> int:
     return moves_frm_to
 
 
-def black_knight_moves(board: list) -> int:
+def black_knight_moves(board: list) -> list:
     moves_frm_to = []
     offsets =  [(2, 1), (2, -1),
                 (-2, 1), (-2, -1),
@@ -593,7 +593,7 @@ def black_knight_moves(board: list) -> int:
     return moves_frm_to
 
 
-def white_bishop_moves(board: list) -> int:
+def white_bishop_moves(board: list) -> list:
     moves = []
     directions = [
         (1, 1),   # down-right
@@ -621,7 +621,7 @@ def white_bishop_moves(board: list) -> int:
     return moves
 
 
-def black_bishop_moves(board: list) -> int:
+def black_bishop_moves(board: list) -> list:
     moves = []
     directions = [
         (1, 1),   # down-right
