@@ -555,15 +555,11 @@ def black_rook_moves(board: list) -> list:
 
 def white_knight_moves(board: list) -> list:
     moves_frm_to = []
-    offsets =  [(2, 1), (2, -1),
-                (-2, 1), (-2, -1),
-                (1, 2), (1, -2),
-                (-1, 2), (-1, -2)]
     
     for row in range(8):
         for col in range(8):
             if board[row][col] == "N":
-                for r, c in offsets:
+                for r, c in KNIGHT_OFFSETS:
                     nr, nc = row + r, col + c
                     if nr < 8 and nr >= 0 and nc < 8 and nc >=0:
                         if board[nr][nc] in "RNBQKP":
@@ -575,15 +571,11 @@ def white_knight_moves(board: list) -> list:
 
 def black_knight_moves(board: list) -> list:
     moves_frm_to = []
-    offsets =  [(2, 1), (2, -1),
-                (-2, 1), (-2, -1),
-                (1, 2), (1, -2),
-                (-1, 2), (-1, -2)]
     
     for row in range(8):
         for col in range(8):
             if board[row][col] == "n":
-                for r, c in offsets:
+                for r, c in KNIGHT_OFFSETS:
                     nr, nc = row + r, col + c
                     if nr < 8 and nr >= 0 and nc < 8 and nc >=0:
                         if board[nr][nc] in "rnbqkp":
