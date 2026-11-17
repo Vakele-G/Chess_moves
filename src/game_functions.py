@@ -119,7 +119,7 @@ class Game:
         )
 
         if reaches_last_rank:
-            if not promotion_piece or promotion_piece.upper() not in "QRBN":
+            if not promotion_piece or promotion_piece.upper() not in ("Q","R","B","N"):
                 return False
             promotion_piece = (promotion_piece.upper() if piece == "P" else promotion_piece.lower())
         elif promotion_piece:
@@ -957,8 +957,6 @@ def generate_moves(board: list) -> list: # Return list of all possible moves
 
 def apply_move(board, move):
     raise NotImplementedError("This function is not implemented yet.")
-
-
 
 
 
